@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// EmotionSense: each signed-in user can read and write ONLY their own documents
+// under users/{userId}/... Everything else is denied by default.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{userId}/checkins/{checkinId} {
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+
+      // Creates must be owned by the caller and use a known entry kind.
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.userId == userId
+                    && request.resource.data.kind in ['detection', 'checkin', 'journal', 'reset']
+                    && request.resource.data.size() <= 20;
+
+      // Entries are append-only from the app; no in-place edits.
+      allow update: if false;
+    }
+
+    // Deny everything not matched above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

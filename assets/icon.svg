@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" role="img" aria-label="EmotionSense">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f5bd5"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#g)"/>
+  <circle cx="17.5" cy="20" r="2.6" fill="#fff"/>
+  <circle cx="30.5" cy="20" r="2.6" fill="#fff"/>
+  <path d="M15.5 28.5c4.6 5 12.4 5 17 0" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/>
+</svg>

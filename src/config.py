@@ -85,3 +85,30 @@ WEBCAM_DETECTION_DOWNSCALE = 0.5   # run face detection on a half-size frame
 WEBCAM_PREDICT_EVERY_N_FRAMES = 3  # reuse the last prediction in between (saves CPU)
 WEBCAM_LOG_INTERVAL_S = 1.0        # add at most one entry per face per second to session analytics
 SESSION_HISTORY_SIZE = 500         # max predictions kept for session analytics
+
+# ---------------------------------------------------------------------------
+# EmotionSense application
+# ---------------------------------------------------------------------------
+APP_NAME = "EmotionSense"
+APP_TAGLINE = "Understand your expression. Reflect. Take a mindful step."
+ASSETS_DIR = ROOT_DIR / "assets"
+
+# Accent colour per expression (warm red-orange Angry, green Disgust, deep purple Fear,
+# gold Happy, blue Sad, violet Surprise, grey-blue Neutral). Fear, Surprise, Sad and Neutral
+# are hard to tell apart with colour-vision deficiency, so the UI never relies on colour
+# alone: every emotion is always shown with its emoji and name.
+EMOTION_COLORS = {
+    "Angry": "#ea5a3a", "Disgust": "#2f9e5c", "Fear": "#8156e8", "Happy": "#e8b023",
+    "Sad": "#2f7fe0", "Surprise": "#c95bd0", "Neutral": "#8394b0",
+}
+EMOTION_EMOJI = {
+    "Angry": "😠", "Disgust": "🤢", "Fear": "😨", "Happy": "😊", "Sad": "😢", "Surprise": "😮", "Neutral": "😐",
+}
+
+# Firebase (Authentication + Firestore). Values come from .streamlit/secrets.toml
+# ([firebase] api_key / project_id) or the environment variables below — never from code.
+FIREBASE_API_KEY_ENV = "FIREBASE_API_KEY"
+FIREBASE_PROJECT_ID_ENV = "FIREBASE_PROJECT_ID"
+FIREBASE_TIMEOUT_S = 10
+HISTORY_COLLECTION = "checkins"    # stored at users/{uid}/checkins/{id}
+HISTORY_FETCH_LIMIT = 500          # newest entries loaded for dashboards

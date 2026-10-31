@@ -7,7 +7,8 @@ matplotlib>=3.9
 seaborn>=0.13
 pillow>=11.0
 pyarrow>=17.0          # reading the parquet mirror in `python -m src.data_loader --download`
-streamlit>=1.40
+streamlit>=1.46        # st.navigation, pills, segmented_control, light+dark themes
+requests>=2.31         # Firebase Auth + Firestore REST calls
 
 # OpenCV 5 removed the Haar-cascade face detector (cv2.CascadeClassifier) and its
 # bundled XML files, which this project uses, so stay on the 4.x line.
