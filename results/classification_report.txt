@@ -1,0 +1,29 @@
+OFFICIAL TEST SET (all 3,589 PrivateTest images)
+              precision    recall  f1-score   support
+
+       Angry     0.5688    0.4379    0.4948       491
+     Disgust     0.3178    0.7455    0.4457        55
+        Fear     0.4268    0.3258    0.3695       528
+       Happy     0.8943    0.7793    0.8328       879
+         Sad     0.4799    0.5034    0.4914       594
+    Surprise     0.6872    0.8029    0.7406       416
+     Neutral     0.5485    0.7045    0.6168       626
+
+    accuracy                         0.6094      3589
+   macro avg     0.5605    0.6142    0.5702      3589
+weighted avg     0.6193    0.6094    0.6076      3589
+
+LEAKAGE-AWARE TEST SUBSET (3275 images not present in train/validation)
+              precision    recall  f1-score   support
+
+       Angry     0.5546    0.4270    0.4825       452
+     Disgust     0.2385    0.6842    0.3537        38
+        Fear     0.4178    0.3125    0.3576       480
+       Happy     0.8977    0.7778    0.8334       846
+         Sad     0.4783    0.4974    0.4876       575
+    Surprise     0.6246    0.7743    0.6915       288
+     Neutral     0.5383    0.6963    0.6072       596
+
+    accuracy                         0.5957      3275
+   macro avg     0.5357    0.5956    0.5448      3275
+weighted avg     0.6093    0.5957    0.5953      3275
