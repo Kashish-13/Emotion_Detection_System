@@ -1,0 +1,52 @@
+{
+  "blank_std_threshold": 1.0,
+  "splits": {
+    "train": {
+      "images": 28709,
+      "near_blank": 12,
+      "within_split_duplicate_copies": 1226
+    },
+    "val": {
+      "images": 3589,
+      "near_blank": 1,
+      "within_split_duplicate_copies": 26
+    },
+    "test": {
+      "images": 3589,
+      "near_blank": 0,
+      "within_split_duplicate_copies": 17
+    }
+  },
+  "cross_split": {
+    "train<->val": {
+      "train_images_found_in_val": 340,
+      "pct_of_train": 1.18,
+      "val_images_found_in_train": 279,
+      "pct_of_val": 7.77,
+      "matches_with_different_label": 15,
+      "verified_pixel_identical": true
+    },
+    "train<->test": {
+      "train_images_found_in_test": 387,
+      "pct_of_train": 1.35,
+      "test_images_found_in_train": 288,
+      "pct_of_test": 8.02,
+      "matches_with_different_label": 22,
+      "verified_pixel_identical": true
+    },
+    "val<->test": {
+      "val_images_found_in_test": 46,
+      "pct_of_val": 1.28,
+      "test_images_found_in_val": 44,
+      "pct_of_test": 1.23,
+      "matches_with_different_label": 2,
+      "verified_pixel_identical": true
+    }
+  },
+  "leakage_aware_test_subset": {
+    "official_test_images": 3589,
+    "leakage_aware_test_images": 3275,
+    "excluded": 314,
+    "rule": "exclude test images whose exact pixels appear in train or validation"
+  }
+}

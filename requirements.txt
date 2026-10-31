@@ -1,0 +1,19 @@
+# Verified on Windows 11, Python 3.13.4 (CPU only), October 2026.
+tensorflow>=2.21,<2.22
+numpy>=2.0
+pandas>=2.2
+scikit-learn>=1.5
+matplotlib>=3.9
+seaborn>=0.13
+pillow>=11.0
+pyarrow>=17.0          # reading the parquet mirror in `python -m src.data_loader --download`
+streamlit>=1.40
+
+# OpenCV 5 removed the Haar-cascade face detector (cv2.CascadeClassifier) and its
+# bundled XML files, which this project uses, so stay on the 4.x line.
+opencv-python>=4.10,<5
+
+# Development / notebooks / tests
+pytest>=8.0
+jupyter>=1.1
+ipykernel>=6.29

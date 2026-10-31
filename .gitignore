@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Environments / secrets
+.venv/
+venv/
+.env
+.env.*
+
+# Dataset (never committed — see data/README.md)
+data/*
+!data/README.md
+!data/.gitkeep
+
+# Model checkpoints other than the final model
+models/*
+!models/.gitkeep
+!models/emotion_model.keras
+
+# Temporary / OS / editor files
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
