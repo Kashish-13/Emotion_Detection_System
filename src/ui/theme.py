@@ -48,7 +48,7 @@ hr { border-color: var(--es-line) !important; }
   box-shadow: var(--es-shadow), 0 0 0 1px rgba(139,124,246,.12), 0 18px 40px -18px rgba(139,124,246,.45); }
 .es-glass + .es-glass { margin-top: .8rem; }
 .es-grid { display: grid; gap: .8rem; }
-.es-grid > .es-glass { margin-top: 0; }
+.es-grid > .es-glass, .es-rank-grid > .es-glass { margin-top: 0; }
 .es-section { margin: 2.1rem 0 .8rem 0; }
 .es-section h3 { font-size: 1.2rem; font-weight: 650; margin: 0; padding: 0; }
 .es-section p { color: var(--es-muted); margin: .15rem 0 0 0; font-size: .92rem; }
@@ -91,7 +91,7 @@ hr { border-color: var(--es-line) !important; }
 .es-badge.low { border-color: rgba(234,90,58,.5); background: rgba(234,90,58,.12); }
 
 /* ---------- stat cards ---------- */
-.es-stat { display: flex; gap: .85rem; align-items: center; height: 100%; }
+.es-stat { display: flex; gap: .85rem; align-items: center; min-height: 4.6rem; }
 .es-stat-icon { flex: none; width: 2.6rem; height: 2.6rem; border-radius: 14px; display: grid; place-items: center;
   font-size: 1.25rem; background: color-mix(in srgb, var(--c, #8b7cf6) 16%, transparent);
   border: 1px solid color-mix(in srgb, var(--c, #8b7cf6) 30%, transparent); }
@@ -164,7 +164,7 @@ hr { border-color: var(--es-line) !important; }
 .es-scan-frame { position: relative; width: 250px; height: 290px; border-radius: 34px; overflow: hidden;
   background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
   border: 1px solid var(--es-line-strong); box-shadow: 0 30px 80px -30px rgba(139,124,246,.7); }
-.es-scan-frame svg { position: absolute; inset: 0; margin: auto; }
+.es-scan-frame img { position: absolute; inset: 0; margin: auto; }
 .es-scan-line { position: absolute; left: 0; right: 0; height: 70px; top: -70px;
   background: linear-gradient(180deg, transparent, rgba(56,198,217,.28) 85%, rgba(56,198,217,.9));
   animation: es-scanline 3.6s ease-in-out infinite; }
@@ -271,7 +271,7 @@ button[data-testid="stBaseButton-secondary"]:hover, button[data-testid="stBaseBu
 
 /* segmented controls & pills */
 [data-testid="stButtonGroup"] button { transition: all .15s ease; }
-button[data-testid="stBaseButton-segmented_controlActive"], button[data-testid="stBaseButton-pillsActive"] {
+[data-testid="stButtonGroup"] button[data-selected="true"] {
   background: rgba(139,124,246,.2) !important; border-color: rgba(139,124,246,.75) !important; }
 
 /* mood cards: the Daily Check-In mood pills become five large cards */
@@ -282,7 +282,7 @@ button[data-testid="stBaseButton-segmented_controlActive"], button[data-testid="
 .st-key-ci_mood button p { font-size: .95rem !important; font-weight: 650; white-space: normal; line-height: 1.3; }
 .st-key-ci_mood button p::first-line { font-size: 2.1rem; line-height: 1.5; }
 .st-key-ci_mood button:hover { transform: translateY(-3px); border-color: rgba(139,124,246,.6) !important; }
-.st-key-ci_mood button[data-testid="stBaseButton-pillsActive"] { transform: translateY(-3px);
+.st-key-ci_mood button[data-selected="true"] { transform: translateY(-3px);
   background: radial-gradient(circle at 50% 0%, rgba(139,124,246,.45), rgba(91,140,246,.12)) !important;
   border: 1.5px solid #a99ffb !important; box-shadow: 0 16px 36px -14px rgba(139,124,246,.95); }
 .st-key-ci_factors button { padding-left: .9rem; padding-right: .9rem; }
@@ -319,7 +319,7 @@ button[data-baseweb="tab"][aria-selected="true"] { background: rgba(139,124,246,
 .st-key-overwhelmed { border-radius: 26px; padding: 1.5rem 1.5rem 1.2rem 1.5rem; border: 1px solid rgba(56,198,217,.3);
   background: radial-gradient(600px 240px at 0% 0%, rgba(56,198,217,.16), transparent 70%),
               radial-gradient(500px 240px at 100% 100%, rgba(139,124,246,.14), transparent 70%), rgba(255,255,255,.025); }
-.st-key-overwhelmed button { justify-content: flex-start; min-height: 3.2rem; border-radius: 16px !important; }
+.st-key-overwhelmed button { min-height: 3.4rem; border-radius: 16px !important; }
 
 /* activity panel */
 .st-key-activity_panel { border-radius: 26px; padding: 1.4rem; border: 1px solid rgba(139,124,246,.4);

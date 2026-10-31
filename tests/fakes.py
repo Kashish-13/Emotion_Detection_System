@@ -2,16 +2,23 @@
 import itertools
 import time
 
-from src.firebase_client import FirebaseError, FirebaseUser
+from src.firebase_client import CloudStorageError, FirebaseError, FirebaseUser
 
 
 class FakeFirebaseClient:
     """Mimics FirebaseClient. Data is stored per uid, like users/{uid}/... in Firestore."""
 
-    def __init__(self):
+    def __init__(self, firestore_down: bool = False):
         self.accounts = {}   # email -> (password, uid, display_name)
         self.data = {}       # uid -> {collection -> {doc_id -> dict}}
         self._ids = itertools.count(1)
+        self.firestore_down = firestore_down  # Auth works, every Firestore call fails
+        self.firestore_calls = 0
+
+    def _firestore(self):
+        self.firestore_calls += 1
+        if self.firestore_down:
+            raise CloudStorageError("Something went wrong. Please try again.", "NOT_FOUND")
 
     # auth -------------------------------------------------------------
     def _user(self, email):
@@ -43,14 +50,17 @@ class FakeFirebaseClient:
         return self.data.setdefault(user.uid, {}).setdefault(collection, {})
 
     def add_document(self, user, collection, data):
+        self._firestore()
         doc_id = f"doc{next(self._ids)}"
         self._collection(user, collection)[doc_id] = dict(data)
         return doc_id
 
     def list_documents(self, user, collection, limit=500):
+        self._firestore()
         return [{**d, "id": i} for i, d in self._collection(user, collection).items()][:limit]
 
     def delete_document(self, user, collection, doc_id):
+        self._firestore()
         self._collection(user, collection).pop(doc_id, None)
 
 

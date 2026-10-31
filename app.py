@@ -42,16 +42,19 @@ def sidebar() -> None:
         if state.is_guest():
             subtitle, status = "Not signed in", '<span class="es-status guest"><i></i>Guest · this session only</span>'
         else:
-            subtitle, status = state.email(), '<span class="es-status cloud"><i></i>Signed in · history synced</span>'
+            badges = {"synced": ("cloud", "Signed in · history synced"),
+                      "unavailable": ("guest", "Signed in · saving locally")}
+            css, label = badges.get(state.cloud_status(), ("cloud", "Signed in"))
+            subtitle, status = state.email(), f'<span class="es-status {css}"><i></i>{label}</span>'
         st.html(f"""<div class="es-glass" style="padding:.85rem .9rem"><div class="es-profile">
             <div class="es-avatar">{escape(name[:1].upper())}</div>
             <div style="min-width:0"><div style="font-weight:700">{escape(name)}</div>
             <div class="es-small es-muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
             {escape(subtitle)}</div></div></div>{status}</div>""")
-        if st.session_state.offline_history:
-            st.caption(f":material/cloud_off: {len(st.session_state.offline_history)} entr"
-                       f"{'y' if len(st.session_state.offline_history) == 1 else 'ies'} saved for this session "
-                       "only — cloud sync was unavailable.")
+        unsynced = len(state.offline_history())
+        if unsynced:
+            st.caption(f":material/cloud_off: {unsynced} entr{'y' if unsynced == 1 else 'ies'} saved locally for "
+                       "this session — cloud sync unavailable.")
         if st.button("Log out", icon=":material/logout:", width="stretch", key="logout"):
             state.logout()
             st.rerun()

@@ -24,13 +24,10 @@ def render() -> None:
         cols = st.columns(3)
         for i, (icon, label, activity_id, hint) in enumerate(OVERWHELMED_RESETS):
             with cols[i % 3]:
-                if activity_id:
-                    if st.button(f"{icon}  {label}", key=f"reset_{i}", help=hint, width="stretch"):
+                if st.button(f"{icon}  {label}", key=f"reset_{i}", help=hint, width="stretch"):
+                    if activity_id:
                         _open(activity_id)
-                else:
-                    st.html(f"""<div class="es-glass" style="padding:.7rem 1rem;margin-bottom:.9rem;border-radius:16px">
-                        <div style="font-weight:600">{icon}&nbsp; {escape(label)}</div>
-                        <div class="es-muted es-small">{escape(hint)}</div></div>""")
+                    st.toast(f"{hint}. Take your time.", icon=":material/favorite:")
 
     ui.section("Your toolkit", "Short guided activities. Each one ends with a quick “How do you feel after this?”.")
     for row in (TOOLKIT_ORDER[:4], TOOLKIT_ORDER[4:]):

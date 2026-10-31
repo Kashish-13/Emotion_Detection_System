@@ -43,13 +43,10 @@ def _checkin() -> None:
             else:
                 entry = new_entry("checkin", selfReportedMood=mood, moodFactors=factors or [],
                                   journalText=text.strip() if keep_note else None)
-                error = state.save_entry(entry)
-                if error:
-                    st.error(error)
-                else:
-                    st.session_state.last_checkin_mood = mood
-                    st.success("**Check-in saved ✨**  \nTaking a minute to reflect is already a good step.",
-                               icon=":material/check_circle:")
+                saved_to_cloud = state.save_entry(entry)
+                st.session_state.last_checkin_mood = mood
+                ui.save_message(saved_to_cloud,
+                                "**Check-in saved ✨**  \nTaking a minute to reflect is already a good step.")
 
     with side_col:
         mood = st.session_state.get("last_checkin_mood")

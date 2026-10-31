@@ -53,6 +53,14 @@ class FirebaseError(Exception):
         self.code = code
 
 
+class CloudStorageError(FirebaseError):
+    """A Firestore request failed (not configured, unreachable, denied, ...).
+
+    Cloud storage is optional: callers fall back to local storage instead of failing.
+    Authentication errors stay plain ``FirebaseError``.
+    """
+
+
 @dataclass(frozen=True)
 class FirebaseUser:
     uid: str
@@ -148,12 +156,18 @@ class FirebaseClient:
         if response.status_code >= 400:
             try:
                 error = response.json().get("error", {})
-                code = error.get("message") or error.get("status") or ""
             except ValueError:
-                code = ""
-            code = code.split(" ")[0].split(":")[0]  # e.g. "WEAK_PASSWORD : Password should be..."
+                error = {}
+            # Auth puts a code in "message" ("WEAK_PASSWORD : Password should be..."); Firestore puts a
+            # sentence there and the code in "status" ("NOT_FOUND" when the database doesn't exist).
+            code = str(error.get("message") or "").split(" ")[0].split(":")[0]
+            if not code.isupper():
+                code = str(error.get("status") or "") or f"HTTP_{response.status_code}"
             raise FirebaseError(FRIENDLY_ERRORS.get(code, "Something went wrong. Please try again."), code)
-        return response.json() if response.content else {}
+        try:
+            return response.json() if response.content else {}
+        except ValueError as err:
+            raise FirebaseError("Something went wrong. Please try again.", "BAD_RESPONSE") from err
 
     def _auth(self, action: str, payload: dict) -> dict:
         return self._request("POST", AUTH_URL.format(action=action, key=self.api_key), json=payload)
@@ -199,10 +213,20 @@ class FirebaseClient:
     def _headers(user: FirebaseUser) -> dict:
         return {"Authorization": f"Bearer {user.id_token}"}
 
+    def _firestore(self, method: str, url: str, user: FirebaseUser, **kwargs) -> dict:
+        """A Firestore request; any failure is raised as CloudStorageError (cloud storage is optional)."""
+        try:
+            return self._request(method, url, headers=self._headers(user), **kwargs)
+        except FirebaseError as err:
+            raise CloudStorageError(str(err), err.code) from err
+
     def add_document(self, user: FirebaseUser, collection: str, data: dict) -> str:
         body = {"fields": {k: to_firestore(v) for k, v in data.items()}}
-        doc = self._request("POST", self._collection_url(user, collection), json=body, headers=self._headers(user))
-        return doc["name"].rsplit("/", 1)[-1]
+        doc = self._firestore("POST", self._collection_url(user, collection), user, json=body)
+        try:
+            return doc["name"].rsplit("/", 1)[-1]
+        except (KeyError, AttributeError) as err:
+            raise CloudStorageError("Something went wrong. Please try again.", "BAD_RESPONSE") from err
 
     def list_documents(self, user: FirebaseUser, collection: str, limit: int = config.HISTORY_FETCH_LIMIT) -> list[dict]:
         docs, token = [], None
@@ -210,9 +234,11 @@ class FirebaseClient:
             params = {"pageSize": min(300, limit - len(docs))}
             if token:
                 params["pageToken"] = token
-            page = self._request("GET", self._collection_url(user, collection), params=params,
-                                 headers=self._headers(user))
-            docs.extend(_decode_document(d) for d in page.get("documents", []))
+            page = self._firestore("GET", self._collection_url(user, collection), user, params=params)
+            try:
+                docs.extend(_decode_document(d) for d in page.get("documents", []))
+            except (KeyError, AttributeError, StopIteration) as err:
+                raise CloudStorageError("Something went wrong. Please try again.", "BAD_RESPONSE") from err
             token = page.get("nextPageToken")
             if not token:
                 break
@@ -221,4 +247,4 @@ class FirebaseClient:
     def delete_document(self, user: FirebaseUser, collection: str, doc_id: str) -> None:
         if not doc_id or "/" in doc_id or doc_id in (".", ".."):
             raise FirebaseError("Invalid entry id.", "INVALID_ID")  # never let an id escape the user's path
-        self._request("DELETE", f"{self._collection_url(user, collection)}/{doc_id}", headers=self._headers(user))
+        self._firestore("DELETE", f"{self._collection_url(user, collection)}/{doc_id}", user)

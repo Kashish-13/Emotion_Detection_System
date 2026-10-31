@@ -26,8 +26,8 @@ def render() -> None:
     if notice:
         ui.soft_notice(notice)
     if not all_entries:
-        ui.empty_state("Your story starts here.", "Complete your first check-in to see your personal patterns.",
-                       icon="🌱")
+        ui.empty_state("No saved check-ins yet.", "Your story starts here — complete your first check-in to see "
+                       "your personal patterns.", icon="🌱")
         a, b, _ = st.columns([1, 1, 2])
         if a.button("Daily check-in", type="primary", icon=":material/edit_note:", width="stretch", key="hist_ci"):
             state.go("checkin")
@@ -53,7 +53,7 @@ def render() -> None:
         ui.stat_card("Top factors", " · ".join(f for f, _ in factors) or "—", "Selected most often", icon="🧩")
     with c[3]:
         ui.stat_card("Current streak", f"{stats['streak']} day{'s' if stats['streak'] != 1 else ''}",
-                     "Consecutive days with a check-in", icon="🔥")
+                     "Days in a row", icon="🔥")
 
     insights = generate_insights(entries)
     if insights:
@@ -71,7 +71,7 @@ def render() -> None:
             dom, avg = stats["dominant_expression"], stats["average_confidence"]
             a, b = st.columns(2)
             with a:
-                ui.stat_card("Most common expression", dom or "—", emotion=dom)
+                ui.stat_card("Top expression", dom or "—", "Model signal", emotion=dom)
             with b:
                 ui.stat_card("Average confidence", f"{avg:.0%}", f"{len(det)} saved detections", icon="🎯")
             _expression_distribution(stats["expression_counts"])
@@ -221,11 +221,10 @@ def _manage(entries: list[dict]) -> None:
 
 
 def _run(action, message: str) -> None:
-    from src.firebase_client import FirebaseError
-
-    try:
-        action()
+    """Run a delete action from state (returns False if the cloud couldn't be reached)."""
+    if action():
         st.toast(message, icon=":material/check:")
         st.rerun()
-    except FirebaseError as err:
-        st.error(str(err))
+    else:
+        st.warning("Cloud history is unavailable right now, so entries stored in the cloud couldn't be deleted. "
+                   "Locally saved entries were removed. Please try again later.", icon=":material/cloud_off:")

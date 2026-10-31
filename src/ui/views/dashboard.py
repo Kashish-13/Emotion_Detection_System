@@ -59,7 +59,7 @@ def render() -> None:
                      "Thanks for checking in" if done else "Takes about a minute", icon="✅" if done else "📝")
     with cols[1]:
         dom = stats["dominant_expression"]
-        ui.stat_card("Most common expression", dom or "—", "Model signal · saved detections", emotion=dom,
+        ui.stat_card("Top expression", dom or "—", "From saved detections", emotion=dom,
                      icon="🧭")
     with cols[2]:
         avg = stats["average_confidence"]
@@ -67,7 +67,7 @@ def render() -> None:
                      icon="🎯")
     with cols[3]:
         ui.stat_card("Current streak", f"{stats['streak']} day{'s' if stats['streak'] != 1 else ''}",
-                     "Consecutive days with a check-in", icon="🔥")
+                     "Days in a row", icon="🔥")
 
     rec, recent = st.columns([1, 1.2], gap="large")
     with rec:

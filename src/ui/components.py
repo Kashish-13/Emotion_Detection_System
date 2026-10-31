@@ -228,15 +228,24 @@ def render_activity(activity_id: str) -> None:
         feeling_after(activity_id)
 
 
+def save_message(saved_to_cloud: bool, text: str) -> None:
+    """Confirmation after state.save_entry(); says so when the entry was only saved locally."""
+    if saved_to_cloud:
+        st.success(text, icon=":material/check_circle:")
+    else:
+        st.success(f"{text}  \n✓ {state.SAVED_LOCALLY}", icon=":material/cloud_off:")
+
+
 def journal_save_button(prompt: str, text: str, key: str) -> None:
     from src.storage import new_entry
 
-    if st.button("Save to my journal", key=key, icon=":material/bookmark_add:", disabled=not text.strip()):
-        error = state.save_entry(new_entry("journal", prompt=prompt, journalText=text.strip()))
-        if error:
-            st.error(error)
+    # Not disabled while empty: a disabled button swallows the click that also commits the text area.
+    if st.button("Save to my journal", key=key, icon=":material/bookmark_add:"):
+        if not text.strip():
+            st.warning("Write something first, then save.", icon=":material/edit:")
         else:
-            st.success("Saved privately to your journal.")
+            save_message(state.save_entry(new_entry("journal", prompt=prompt, journalText=text.strip())),
+                         "✓ Journal saved.")
 
 
 def feeling_after(activity_id: str) -> None:
@@ -246,11 +255,8 @@ def feeling_after(activity_id: str) -> None:
     choice = st.pills("How do you feel after this?", FEELINGS_AFTER, key=f"feel_{activity_id}",
                       format_func=lambda f: f"{FEELING_ICONS[f]} {f}", label_visibility="collapsed")
     if choice and st.button("Save reflection", key=f"save_feel_{activity_id}", icon=":material/check:"):
-        error = state.save_entry(new_entry("reset", activity=activity_id, feelingAfter=choice))
-        if error:
-            st.error(error)
-        else:
-            st.success("Reflection saved.")
+        save_message(state.save_entry(new_entry("reset", activity=activity_id, feelingAfter=choice)),
+                     "✓ Reflection saved.")
     if choice == "Still difficult":
         st.info(DISTRESS_NOTE, icon=":material/favorite:")
     st.caption("This is a self-reflection, not a test or an assessment.")

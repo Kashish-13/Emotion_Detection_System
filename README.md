@@ -39,27 +39,30 @@ All numbers in this README come from `results/metrics.json` and `results/trainin
 ### EmotionSense app
 
 - **Accounts:** Firebase email/password sign-up, login, logout and password reset. There's also a **guest mode** that saves nothing beyond the browser session.
-- **Dashboard:** today's check-ins, main expression, average confidence, current streak, quick actions, recent snapshots and *Recommended for you*.
-- **Detect Emotion:** upload a photo or take a camera snapshot. You get result cards per face, *What you can do next* and **Save check-in**. The image itself is never stored.
-- **Daily Check-In:** self-reported mood, the factors affecting it and an optional note, plus a **Reflection Journal** with prompts.
-- **Wellbeing toolkit:** *Feeling overwhelmed?* quick resets and 8 short activities, including an animated breathing guide, step-by-step 5-4-3-2-1 grounding and timers. Each ends with a *How do you feel after this?* reflection.
+- **Dashboard:** a large *Current emotion* card (emoji, name, confidence ring and badge) with the probability bars, today's check-in status, streak, *Recommended for you*, recent activity and quick actions.
+- **Detect Emotion:** drop a photo or take a camera snapshot. You get the annotated image next to a large result card, an *Emotion distribution* of all seven expressions, ranked *Top 3 predictions*, Grad-CAM, *What you can do next* and **Save check-in**. The image itself is never stored.
+- **Daily Check-In:** five large mood cards, selectable factor chips and an optional note, plus a **Reflection Journal** with prompts.
+- **Live Webcam (*EmotionSense Vision*):** a scanner-style camera frame with a live status badge, face count, FPS, the current expression and a small distribution panel.
+- **Wellbeing toolkit:** *Feeling overwhelmed?* small resets and 8 activity cards, including a breathing guide (INHALE · HOLD · EXHALE with a countdown), step-by-step 5-4-3-2-1 grounding and timers. Each ends with a *How do you feel after this?* reflection.
 - **History & Insights:** charts and rule-based insights that keep the **model signal** (detected expressions) clearly apart from **self-reported mood**. You can delete one entry or all your data.
 - **Model Insights:** the full evaluation story, including why accuracy isn't enough and the leakage-aware results.
-- **Light and dark themes**, with the colour palette checked for colour-blind readability.
+- **Dark-first design:** glass cards, a violet-to-cyan brand gradient, subtle motion (switched off for *reduce motion*), and a per-emotion colour system. Fear, Surprise, Sad and Neutral are hard to tell apart with colour-vision deficiency, so every emotion is always shown with its **emoji and name** too.
 
 ## Screenshots
 
-These are captured from the running app in headless Chrome (guest mode, light theme unless noted).
+These are captured from the running app in headless Chrome (guest mode).
 
 | Landing | Dashboard |
 |---|---|
 | ![Landing](docs/screenshots/landing.png) | ![Dashboard](docs/screenshots/dashboard.png) |
-| **Detect Emotion** (multi-face upload) | **Wellbeing**: 1-minute reset |
-| ![Detect](docs/screenshots/detect.png) | ![Wellbeing](docs/screenshots/wellbeing.png) |
+| **Detect Emotion** (multi-face upload) | **Detect Emotion**: top 3, Grad-CAM, next steps |
+| ![Detect](docs/screenshots/detect.png) | ![Detect results](docs/screenshots/detect_results.png) |
+| **Daily Check-In** | **Wellbeing** |
+| ![Check-in](docs/screenshots/checkin.png) | ![Wellbeing](docs/screenshots/wellbeing.png) |
 | **History & Insights** | **Model Insights** |
 | ![History](docs/screenshots/history.png) | ![Model insights](docs/screenshots/model_insights.png) |
-| **Dashboard, dark theme** | **Inference pipeline output** (`src/predict.py`) |
-| ![Dark](docs/screenshots/dashboard_dark.png) | ![Pipeline demo](results/demo_multi_face.png) |
+| **Live Webcam** (camera off) | **Inference pipeline output** (`src/predict.py`) |
+| ![Webcam](docs/screenshots/webcam.png) | ![Pipeline demo](results/demo_multi_face.png) |
 
 The pipeline demo uses four FER-2013 test faces the model never saw during training. The third face is turned sharply and is **missed by the frontal Haar detector**. This is a real limitation, shown deliberately.
 
@@ -231,9 +234,9 @@ Grad-CAM weights the last convolutional feature map (`block4_2_relu`, 6×6) by t
 
 | Section | Page | What it does |
 |---|---|---|
-| Home | **Dashboard** | Greeting, summary cards (today's check-ins, main expression, average confidence, streak), quick actions, recent snapshots, *Recommended for you* |
-| Detect | **Detect Emotion** | Upload or camera snapshot, then face boxes, a result card per face, top-3, probability chart, Grad-CAM, suggestions and *Save check-in* |
-| Detect | **Live Webcam** | Start/Pause, live annotated preview, face count, main expression, confidence, FPS, save while paused, session summary |
+| Home | **Dashboard** | Greeting, *Current emotion* card with probability bars, today's check-in status, streak, *Recommended for you*, recent activity, quick actions |
+| Analyze | **Detect Emotion** | Upload or camera snapshot, then face boxes, result card, emotion distribution, ranked top-3, Grad-CAM, suggestions, *Save check-in*, *Try another image* |
+| Analyze | **Live Webcam** | *EmotionSense Vision*: Start/Pause, live status, annotated preview, face count, current expression, confidence, FPS, distribution, save while paused, session summary |
 | Reflect | **Daily Check-In** | Mood (😄 Great to 😣 Difficult), factors, optional note, and a **Reflection Journal** with prompts |
 | Reflect | **Wellbeing** | *Feeling overwhelmed?* quick resets, 8 toolkit activities, *How do you feel after this?* |
 | Reflect | **History & Insights** | Time-range filter; **model signal** and **self-reported mood** charts side by side; rule-based insights; activity table; delete data |
@@ -336,13 +339,13 @@ Emotion_Detection_System/
 │   ├── analytics.py            # session summary, history stats, streaks, insights
 │   ├── utils.py                # plot style, figure saving
 │   └── ui/
-│       ├── theme.py            # global CSS (works in light and dark themes)
+│       ├── theme.py            # global CSS: dark-first design system
 │       ├── components.py       # cards, result card, charts, activities
 │       ├── state.py            # sign-in state, token refresh, history store, routing
 │       ├── resources.py        # cached model + Grad-CAM
 │       └── views/              # landing, dashboard, detect, webcam, checkin, toolkit, history, model_insights, about
 ├── .streamlit/
-│   ├── config.toml             # light + dark theme
+│   ├── config.toml             # dark theme, fonts
 │   └── secrets.toml.example    # Firebase config template (real secrets.toml is git-ignored)
 ├── firestore.rules             # per-user Firestore security rules
 ├── assets/                     # logo + icon (SVG)
@@ -421,6 +424,7 @@ Tests that need the dataset or the model skip themselves if those files are abse
 
 **App**
 - **Sign-in doesn't survive a browser refresh.** Streamlit keeps it in the session, so you log in again after reloading.
+- **Firestore is optional.** Firebase Authentication is required for accounts, but if Firestore isn't set up or can't be reached, the app keeps working: entries are saved locally for the current session (*"Saved locally — cloud sync unavailable"*), History shows them with a short notice, and the sidebar shows how many there are. After a failure the app waits 60 seconds before trying Firestore again, so pages don't stall. Local entries are **not** uploaded later automatically, and they are cleared when you log out or close the tab.
 - **Live webcam uses the server's camera.** On a hosted deployment, use the *Camera* snapshot option on Detect Emotion instead.
 - **Rules weren't run in the emulator.** The Firebase flows were tested against a fake backend, and the security rules were not executed in the Firebase emulator, which needs Java. Before real use, check them in the Firebase console's **Rules Playground**.
 - **Insights are simple rule-based summaries** of the user's own data, not statistical or clinical analysis.

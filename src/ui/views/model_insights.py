@@ -104,7 +104,7 @@ def render() -> None:
         <div class="es-stat-hint">F1 · recall {m['recall']:.0%} · {m['support']} images</div>
         <div class="es-bar-track" style="margin-top:.45rem"><div class="es-bar-fill" style="width:{m['f1'] * 100:.0f}%">
         </div></div></div>""" for e, m in ranked)
-    st.html(f'<div class="es-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">{cards}</div>')
+    st.html(f'<div class="es-grid" style="grid-template-columns:repeat(auto-fit,minmax(118px,1fr))">{cards}</div>')
     weakest = ", ".join(e for e, _ in ranked[:3])
     st.caption(f"Weakest classes: {weakest}. Fear, Sad and Angry are often confused with each other; Disgust has very "
                "few test images, so its scores are noisy.")

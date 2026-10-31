@@ -124,9 +124,9 @@ def _primary(faces):
 def _stats(faces, fps) -> None:
     c1, c2 = st.columns(2)
     with c1:
-        ui.stat_card("Faces detected", str(len(faces)), icon="👥")
+        ui.stat_card("Faces", str(len(faces)), "In view", icon="👥")
     with c2:
-        ui.stat_card("FPS", f"{fps:.1f}" if fps else "—", icon="⚡")
+        ui.stat_card("FPS", f"{fps:.1f}" if fps else "—", "Frames per second", icon="⚡")
     if not faces:
         if fps is not None:
             st.info("No face detected. Try adjusting your position or lighting.", icon=":material/face:")
@@ -157,11 +157,8 @@ def _save_last(faces) -> None:
                         format_func=lambda m: f"{MOODS[m]} {m}")
         if st.button("Save check-in", type="primary", icon=":material/bookmark_add:", width="stretch",
                      key="cam_save"):
-            error = state.save_entry(detection_entry(face, "webcam", mood))
-            if error:
-                st.error(error)
-            else:
-                st.success("Saved — the expression and confidence only, never the frame.")
+            ui.save_message(state.save_entry(detection_entry(face, "webcam", mood)),
+                            "✓ Saved — the expression and confidence only, never the frame.")
 
 
 def _session_summary() -> None:

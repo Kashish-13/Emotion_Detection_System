@@ -6,7 +6,7 @@ import pytest
 import requests
 
 from src import config
-from src.firebase_client import (FirebaseClient, FirebaseError, FirebaseUser, from_firestore,
+from src.firebase_client import (CloudStorageError, FirebaseClient, FirebaseError, FirebaseUser, from_firestore,
                                  load_firebase_config, to_firestore)
 from src.storage import FirestoreHistoryStore, new_entry
 from tests.fakes import FakeFirebaseClient
@@ -116,6 +116,50 @@ def test_firestore_requests_are_scoped_to_the_signed_in_user():
 def test_delete_rejects_ids_that_could_escape_the_users_path(bad_id):
     with pytest.raises(FirebaseError):
         client().delete_document(USER_A, "checkins", bad_id)
+
+
+class TextResponse(FakeResponse):
+    """A reply whose body isn't JSON (e.g. an HTML error page from a proxy)."""
+
+    def __init__(self, status=200):
+        super().__init__(status)
+        self.content = b"<html>oops</html>"
+
+    def json(self):
+        raise ValueError("not JSON")
+
+
+def test_firestore_failures_are_cloud_storage_errors_with_the_status_code():
+    missing_db = {"error": {"code": 404, "status": "NOT_FOUND",
+                            "message": "The database (default) does not exist for project proj"}}
+    c = client(FakeResponse(404, missing_db), FakeResponse(403, {"error": {"status": "PERMISSION_DENIED",
+                                                                          "message": "Missing permissions."}}),
+               requests.ConnectionError("offline"))
+    with pytest.raises(CloudStorageError) as err:
+        c.add_document(USER_A, "checkins", {"kind": "checkin"})
+    assert err.value.code == "NOT_FOUND" and "database" not in str(err.value)  # no API details shown
+    with pytest.raises(CloudStorageError) as err:
+        c.list_documents(USER_A, "checkins")
+    assert err.value.code == "PERMISSION_DENIED"
+    with pytest.raises(CloudStorageError) as err:
+        c.delete_document(USER_A, "checkins", "D1")
+    assert err.value.code == "NETWORK"
+
+
+def test_auth_errors_are_not_cloud_storage_errors():
+    with pytest.raises(FirebaseError) as err:
+        client(FakeResponse(400, {"error": {"message": "INVALID_LOGIN_CREDENTIALS"}})).sign_in("a@x.com", "pw")
+    assert not isinstance(err.value, CloudStorageError)
+
+
+def test_malformed_replies_raise_firebase_errors_not_raw_exceptions():
+    with pytest.raises(FirebaseError) as err:
+        client(TextResponse()).sign_in("a@x.com", "pw")
+    assert err.value.code == "BAD_RESPONSE"
+    with pytest.raises(CloudStorageError):
+        client(FakeResponse(body={"unexpected": True})).add_document(USER_A, "checkins", {"kind": "checkin"})
+    with pytest.raises(CloudStorageError):
+        client(TextResponse(503)).list_documents(USER_A, "checkins")
 
 
 def test_config_from_environment(monkeypatch):

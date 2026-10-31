@@ -1,4 +1,5 @@
 """Landing screen: hero, scanner illustration, and login / sign-up / password reset."""
+import base64
 import re
 
 import streamlit as st
@@ -23,16 +24,15 @@ STEPS = [
 ORBIT = [("Happy", 4, 10, 0), ("Surprise", 70, 6, 1.2), ("Neutral", -2, 46, 2.4), ("Sad", 76, 40, .6),
          ("Angry", 6, 80, 1.8), ("Fear", 70, 76, 3), ("Disgust", 40, -1, 3.6)]
 
-FACE_SVG = """<svg width="170" height="210" viewBox="0 0 170 210" fill="none" aria-hidden="true">
-  <defs><linearGradient id="fg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a99ffb"/>
-  <stop offset="1" stop-color="#38c6d9"/></linearGradient></defs>
-  <path d="M85 12c-38 0-62 30-62 72 0 50 30 104 62 104s62-54 62-104c0-42-24-72-62-72z" stroke="url(#fg)"
+# Line-art face; embedded as an <img> data URI because st.html strips inline <svg>.
+FACE_SVG = """<svg xmlns="http://www.w3.org/2000/svg" width="170" height="210" viewBox="0 0 170 210" fill="none">
+  <path d="M85 12c-38 0-62 30-62 72 0 50 30 104 62 104s62-54 62-104c0-42-24-72-62-72z" stroke="#a99ffb"
         stroke-width="2.4" opacity=".9"/>
-  <path d="M48 78c8-6 20-7 28-2M94 76c8-5 20-4 28 2" stroke="url(#fg)" stroke-width="2.4" stroke-linecap="round"/>
-  <ellipse cx="62" cy="96" rx="9" ry="5.5" stroke="url(#fg)" stroke-width="2.2"/>
-  <ellipse cx="108" cy="96" rx="9" ry="5.5" stroke="url(#fg)" stroke-width="2.2"/>
-  <path d="M85 100v26l-8 6" stroke="url(#fg)" stroke-width="2" stroke-linecap="round" opacity=".8"/>
-  <path d="M64 152c12 10 30 10 42 0" stroke="url(#fg)" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M48 78c8-6 20-7 28-2M94 76c8-5 20-4 28 2" stroke="#a99ffb" stroke-width="2.4" stroke-linecap="round"/>
+  <ellipse cx="62" cy="96" rx="9" ry="5.5" stroke="#a99ffb" stroke-width="2.2"/>
+  <ellipse cx="108" cy="96" rx="9" ry="5.5" stroke="#a99ffb" stroke-width="2.2"/>
+  <path d="M85 100v26l-8 6" stroke="#a99ffb" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+  <path d="M64 152c12 10 30 10 42 0" stroke="#a99ffb" stroke-width="2.6" stroke-linecap="round"/>
   <g fill="#38c6d9" opacity=".75"><circle cx="40" cy="60" r="1.6"/><circle cx="130" cy="60" r="1.6"/>
   <circle cx="34" cy="110" r="1.6"/><circle cx="136" cy="110" r="1.6"/><circle cx="56" cy="170" r="1.6"/>
   <circle cx="114" cy="170" r="1.6"/><circle cx="85" cy="40" r="1.6"/><circle cx="85" cy="190" r="1.6"/></g>
@@ -45,8 +45,9 @@ def _scanner() -> str:
     chips = "".join(
         f'<div class="es-orbit" style="--c:{config.EMOTION_COLORS[e]};left:{x}%;top:{y}%;'
         f'animation-delay:-{d}s">{config.EMOTION_EMOJI[e]} {e}</div>' for e, x, y, d in ORBIT)
+    face = "data:image/svg+xml;base64," + base64.b64encode(FACE_SVG.encode()).decode()
     return f"""<div class="es-scan">
-        <div class="es-scan-frame">{FACE_SVG}<div class="es-scan-line"></div>
+        <div class="es-scan-frame"><img src="{face}" width="170" height="210" alt=""><div class="es-scan-line"></div>
           <i class="es-corner tl"></i><i class="es-corner tr"></i><i class="es-corner bl"></i><i class="es-corner br"></i>
         </div>{chips}
         <div class="es-scan-caption es-chip">✦ AI-powered facial expression analysis</div></div>"""
