@@ -311,7 +311,6 @@ Tests that need the dataset or the model skip themselves if those files are abse
 - The model must **not** be used to diagnose mental health, judge honesty, screen job candidates, monitor students or employees, or infer personality.
 - FER-2013's **demographic composition is undocumented**, and performance across groups has **not been audited**. It may be uneven.
 - FER-2013 labels are noisy (some duplicated images carry different labels), so the labels themselves are imperfect.
-- The app uses wording such as *"detected facial expression"*, never *"you are feeling…"*, and processes webcam frames locally without storing them.
 
 ## Future improvements
 
