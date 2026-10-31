@@ -310,7 +310,6 @@ Tests that need the dataset or the model skip themselves if those files are abse
 - **Expressions are not emotions.** A smile is not proof of happiness, and expressions vary by culture, individual and context.
 - The model must **not** be used to diagnose mental health, judge honesty, screen job candidates, monitor students or employees, or infer personality.
 - FER-2013's **demographic composition is undocumented**, and performance across groups has **not been audited**. It may be uneven.
-- FER-2013 labels are noisy (some duplicated images carry different labels), so the labels themselves are imperfect.
 
 ## Future improvements
 
@@ -321,6 +320,6 @@ Tests that need the dataset or the model skip themselves if those files are abse
 
 ## Author
 
-**Kashish Arya**: [github.com/Kashish-13](https://github.com/Kashish-13)
+**Kashish Arya**
 
 Licensed under the [MIT License](LICENSE).
