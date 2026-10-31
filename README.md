@@ -2,6 +2,8 @@
 
 *Understand your expression. Reflect. Take a mindful step.*
 
+🌐 **Live Demo:** https://emotiondetectionsystem-13.streamlit.app/
+
 **EmotionSense** has two parts:
 
 1. A **deep-learning facial-expression recogniser**: a custom CNN trained on **FER-2013**, with OpenCV face detection, Grad-CAM explainability and camera-snapshot inference. It was trained and evaluated locally on a CPU-only Windows laptop.
