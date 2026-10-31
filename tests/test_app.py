@@ -74,6 +74,15 @@ def test_landing_without_firebase_offers_guest_mode():
     assert not at.exception and at.session_state["mode"] == "guest"
 
 
+def test_navigation_has_no_separate_webcam_page():
+    from src.ui import state
+
+    at = AppTest.from_file(str(Path(__file__).resolve().parent.parent / "app.py"), default_timeout=180).run()
+    at.button(key="guest").click().run()
+    assert not at.exception
+    assert set(state.PAGES) == {"dashboard", "detect", "checkin", "wellbeing", "history", "insights", "about"}
+
+
 @pytest.mark.parametrize("view", ["dashboard", "detect", "webcam", "checkin", "toolkit", "history",
                                   "model_insights", "about"])
 def test_every_page_renders_in_guest_mode(view):

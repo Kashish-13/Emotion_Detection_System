@@ -28,7 +28,7 @@ def _image(name: str, caption: str | None = None) -> None:
 
 def _metric(label: str, value: str, hint: str) -> str:
     return f"""<div class="es-glass lift"><div class="es-stat-label">{escape(label)}</div>
-        <div class="es-grad-text" style="font-family:'Space Grotesk',Inter,sans-serif;font-size:2.2rem;font-weight:700;
+        <div class="es-grad-text" style="font-size:2rem;font-weight:700;
         line-height:1.15">{escape(value)}</div><div class="es-stat-hint">{escape(hint)}</div></div>"""
 
 

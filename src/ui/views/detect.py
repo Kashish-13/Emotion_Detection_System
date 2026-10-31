@@ -22,8 +22,9 @@ def render() -> None:
         model_missing(error)
         return
 
-    source = st.segmented_control("Image source", ["Upload image", "Camera"], default="Upload image",
-                                  key="detect_source", label_visibility="collapsed")
+    st.session_state.setdefault("detect_source", "Upload image")  # the dashboard can preselect "Camera"
+    source = st.segmented_control("Image source", ["Upload image", "Camera"], key="detect_source",
+                                  label_visibility="collapsed")
     st.session_state.setdefault("upload_round", 0)  # bumped by "Try another image" to reset the uploader
     data = None
     if source == "Camera":
@@ -160,7 +161,7 @@ def _next_steps(face, image_key: str, index: int, source: str) -> None:
             ui.suggestion_list(s["items"], key_prefix=f"det_{image_key}_{index}")
         st.caption("General wellbeing ideas, not medical advice. A detected expression doesn't tell us how you feel.")
     with save:
-        saved = st.session_state.setdefault("saved_detection_results", {})  # save key -> saved to cloud?
+        saved = st.session_state.setdefault("saved_detections", set())
         save_key = f"{image_key}:{index}"
         ui.section("Save check-in")
         with st.container(key="glass_save"):
@@ -168,11 +169,11 @@ def _next_steps(face, image_key: str, index: int, source: str) -> None:
             mood = st.pills("How do you actually feel? (optional)", list(MOODS), key=f"mood_{save_key}",
                             format_func=lambda m: f"{MOODS[m]} {m}")
             if save_key in saved:
-                ui.save_message(saved[save_key], "✓ Saved to your history.")
+                ui.save_message("✓ Saved to your history.")
             elif st.button("Save check-in", type="primary", icon=":material/bookmark_add:", width="stretch",
                            key=f"save_{save_key}"):
-                saved[save_key] = state.save_entry(
-                    detection_entry(face, "camera" if source == "Camera" else "image", mood))
+                state.save_entry(detection_entry(face, "camera" if source == "Camera" else "image", mood))
+                saved.add(save_key)
                 st.rerun()  # the button is replaced by the confirmation, so it can't be saved twice
             if state.is_guest():
                 st.caption("Guest mode: saved only for this session.")

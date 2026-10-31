@@ -157,8 +157,8 @@ def _save_last(faces) -> None:
                         format_func=lambda m: f"{MOODS[m]} {m}")
         if st.button("Save check-in", type="primary", icon=":material/bookmark_add:", width="stretch",
                      key="cam_save"):
-            ui.save_message(state.save_entry(detection_entry(face, "webcam", mood)),
-                            "✓ Saved — the expression and confidence only, never the frame.")
+            state.save_entry(detection_entry(face, "webcam", mood))
+            ui.save_message("✓ Saved — the expression and confidence only, never the frame.")
 
 
 def _session_summary() -> None:
@@ -184,7 +184,7 @@ def _session_summary() -> None:
         color=alt.Color("Expression:N", legend=None, scale=alt.Scale(
             domain=list(config.EMOTION_COLORS), range=list(config.EMOTION_COLORS.values()))),
         tooltip=["Expression", "Count"]).properties(height=220)
-    st.altair_chart(chart, width="stretch")
+    st.altair_chart(chart, width="stretch", theme=None)
     if st.button("Reset session", icon=":material/restart_alt:", key="cam_reset"):
         st.session_state.session_predictions, st.session_state.faces_detected = [], 0
         st.rerun()

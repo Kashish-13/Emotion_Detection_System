@@ -4,7 +4,7 @@
 
 **EmotionSense** has two parts:
 
-1. A **deep-learning facial-expression recogniser**: a custom CNN trained on **FER-2013**, with OpenCV face detection, Grad-CAM explainability and real-time webcam inference. It was trained and evaluated locally on a CPU-only Windows laptop.
+1. A **deep-learning facial-expression recogniser**: a custom CNN trained on **FER-2013**, with OpenCV face detection, Grad-CAM explainability and camera-snapshot inference. It was trained and evaluated locally on a CPU-only Windows laptop.
 2. A **personal reflection and wellbeing dashboard** in Streamlit, with Firebase accounts, daily check-ins, a journal, a wellbeing toolkit and history insights.
 
 The second part turns a detected expression into an invitation to check in with yourself.
@@ -33,7 +33,7 @@ All numbers in this README come from `results/metrics.json` and `results/trainin
 - **Prediction for each face** with confidence, **top-3 alternatives** and the full **7-class probability distribution**.
 - **Confidence bands** (High ≥ 70%, Moderate 40–70%, Low < 40%) with a gentle low-confidence warning. The thresholds are checked against validation accuracy (see [Results](#results)).
 - **Grad-CAM** "model attention" heatmap for every detected face.
-- **Live webcam** with Start/Pause control, a live face count, the main expression, confidence and FPS. Prediction runs every 3rd frame to save CPU.
+- **Camera snapshots** from the browser, analysed exactly like uploaded photos.
 - **Leakage-aware evaluation:** FER-2013's cross-split duplicate images are detected and reported transparently.
 
 ### EmotionSense app
@@ -41,12 +41,11 @@ All numbers in this README come from `results/metrics.json` and `results/trainin
 - **Accounts:** Firebase email/password sign-up, login, logout and password reset. There's also a **guest mode** that saves nothing beyond the browser session.
 - **Dashboard:** a large *Current emotion* card (emoji, name, confidence ring and badge) with the probability bars, today's check-in status, streak, *Recommended for you*, recent activity and quick actions.
 - **Detect Emotion:** drop a photo or take a camera snapshot. You get the annotated image next to a large result card, an *Emotion distribution* of all seven expressions, ranked *Top 3 predictions*, Grad-CAM, *What you can do next* and **Save check-in**. The image itself is never stored.
-- **Daily Check-In:** five large mood cards, selectable factor chips and an optional note, plus a **Reflection Journal** with prompts.
-- **Live Webcam (*EmotionSense Vision*):** a scanner-style camera frame with a live status badge, face count, FPS, the current expression and a small distribution panel.
-- **Wellbeing toolkit:** *Feeling overwhelmed?* small resets and 8 activity cards, including a breathing guide (INHALE · HOLD · EXHALE with a countdown), step-by-step 5-4-3-2-1 grounding and timers. Each ends with a *How do you feel after this?* reflection.
+- **Daily Check-In:** five mood cards, selectable factor chips and an optional written reflection (*Want to put it into words?*).
+- **Wellbeing toolkit:** *Feeling overwhelmed?* small resets and 8 activity cards, including journaling with prompts, a breathing guide (INHALE · HOLD · EXHALE with a countdown), step-by-step 5-4-3-2-1 grounding and timers. Each ends with a *How do you feel after this?* reflection.
 - **History & Insights:** charts and rule-based insights that keep the **model signal** (detected expressions) clearly apart from **self-reported mood**. You can delete one entry or all your data.
 - **Model Insights:** the full evaluation story, including why accuracy isn't enough and the leakage-aware results.
-- **Dark-first design:** glass cards, a violet-to-cyan brand gradient, subtle motion (switched off for *reduce motion*), and a per-emotion colour system. Fear, Surprise, Sad and Neutral are hard to tell apart with colour-vision deficiency, so every emotion is always shown with its **emoji and name** too.
+- **Clean, light design:** white cards, one indigo accent, subtle shadows and minimal motion (switched off for *reduce motion*), plus a per-emotion colour system. Fear, Surprise, Sad and Neutral are hard to tell apart with colour-vision deficiency, so every emotion is always shown with its **emoji and name** too.
 
 ## Screenshots
 
@@ -61,8 +60,8 @@ These are captured from the running app in headless Chrome (guest mode).
 | ![Check-in](docs/screenshots/checkin.png) | ![Wellbeing](docs/screenshots/wellbeing.png) |
 | **History & Insights** | **Model Insights** |
 | ![History](docs/screenshots/history.png) | ![Model insights](docs/screenshots/model_insights.png) |
-| **Live Webcam** (camera off) | **Inference pipeline output** (`src/predict.py`) |
-| ![Webcam](docs/screenshots/webcam.png) | ![Pipeline demo](results/demo_multi_face.png) |
+| **Detect Emotion**: camera snapshot | **Inference pipeline output** (`src/predict.py`) |
+| ![Camera](docs/screenshots/camera.png) | ![Pipeline demo](results/demo_multi_face.png) |
 
 The pipeline demo uses four FER-2013 test faces the model never saw during training. The third face is turned sharply and is **missed by the frontal Haar detector**. This is a real limitation, shown deliberately.
 
@@ -236,14 +235,13 @@ Grad-CAM weights the last convolutional feature map (`block4_2_relu`, 6×6) by t
 |---|---|---|
 | Home | **Dashboard** | Greeting, *Current emotion* card with probability bars, today's check-in status, streak, *Recommended for you*, recent activity, quick actions |
 | Analyze | **Detect Emotion** | Upload or camera snapshot, then face boxes, result card, emotion distribution, ranked top-3, Grad-CAM, suggestions, *Save check-in*, *Try another image* |
-| Analyze | **Live Webcam** | *EmotionSense Vision*: Start/Pause, live status, annotated preview, face count, current expression, confidence, FPS, distribution, save while paused, session summary |
-| Reflect | **Daily Check-In** | Mood (😄 Great to 😣 Difficult), factors, optional note, and a **Reflection Journal** with prompts |
-| Reflect | **Wellbeing** | *Feeling overwhelmed?* quick resets, 8 toolkit activities, *How do you feel after this?* |
+| Reflect | **Daily Check-In** | Mood (😄 Great to 😣 Difficult), factors and an optional written reflection |
+| Reflect | **Wellbeing** | *Feeling overwhelmed?* quick resets, 8 toolkit activities (including journaling with prompts), *How do you feel after this?* |
 | Reflect | **History & Insights** | Time-range filter; **model signal** and **self-reported mood** charts side by side; rule-based insights; activity table; delete data |
 | Learn | **Model Insights** | Leakage-aware and official metrics, *why accuracy isn't enough*, architecture, curves, confusion matrices, per-class metrics, Grad-CAM |
 | Learn | **About** | How it works, technology, limitations, privacy |
 
-The live webcam is read with OpenCV **on the machine running Streamlit**, so it works when the app runs locally. The *Camera* option on Detect Emotion uses the browser's camera instead, and also works when the app is hosted.
+The *Camera* option on Detect Emotion uses the browser's camera, so it works both locally and when the app is hosted. The dashboard's **Use camera** button opens it directly.
 
 ### Architecture
 
@@ -339,13 +337,13 @@ Emotion_Detection_System/
 │   ├── analytics.py            # session summary, history stats, streaks, insights
 │   ├── utils.py                # plot style, figure saving
 │   └── ui/
-│       ├── theme.py            # global CSS: dark-first design system
+│       ├── theme.py            # global CSS: light design system
 │       ├── components.py       # cards, result card, charts, activities
 │       ├── state.py            # sign-in state, token refresh, history store, routing
 │       ├── resources.py        # cached model + Grad-CAM
-│       └── views/              # landing, dashboard, detect, webcam, checkin, toolkit, history, model_insights, about
+│       └── views/              # landing, dashboard, detect, checkin, toolkit, history, model_insights, about
 ├── .streamlit/
-│   ├── config.toml             # dark theme, fonts
+│   ├── config.toml             # light theme, font
 │   └── secrets.toml.example    # Firebase config template (real secrets.toml is git-ignored)
 ├── firestore.rules             # per-user Firestore security rules
 ├── assets/                     # logo + icon (SVG)
@@ -400,15 +398,16 @@ Open `notebooks/eda_and_model_analysis.ipynb` with the `.venv` interpreter selec
 pytest -q
 ```
 
-There are 75 tests, and none of them need a network connection or a real Firebase project.
+There are 98 tests, and none of them need a network connection or a real Firebase project.
 
 | File | Covers |
 |---|---|
 | `test_preprocessing.py` | Labels, input shape and range, class weights, deterministic validation pipeline, blank and leakage masks |
 | `test_inference.py` | Prediction format, probabilities summing to 1, top-3, confidence bands, low-confidence warning, no-face, invalid image, missing or corrupt model, multi-face on real FER faces, Grad-CAM |
-| `test_firebase.py` | Auth request payloads, friendly errors, token refresh, Firestore encoding, **every request scoped to `users/{own uid}`**, path-escape protection, per-user data isolation |
+| `test_firebase.py` | Auth request payloads, friendly errors, Firestore failures reported as `CloudStorageError`, malformed replies, token refresh, Firestore encoding, **every request scoped to `users/{own uid}`**, path-escape protection, per-user data isolation |
 | `test_wellbeing.py` | Suggestion and activity coverage, non-diagnostic wording scan, storage (no image data saved), streaks, stats, insights |
-| `test_app.py` | Every page renders; guest flow; daily check-in submission; wellbeing activity and reflection; history deletion; **sign-up → logout → wrong password → login → password reset** against an in-memory fake Firebase |
+| `test_persistence.py` | Firestore up and down: saves go to exactly one place (no duplicates), local fallback, loading, retry window, deletes, journal and check-in end to end, every page renders without Firestore |
+| `test_app.py` | Every page renders; navigation; guest flow; daily check-in submission; wellbeing activity and reflection; history deletion; **sign-up → logout → wrong password → login → password reset** against an in-memory fake Firebase |
 
 Tests that need the dataset or the model skip themselves if those files are absent.
 
@@ -424,8 +423,8 @@ Tests that need the dataset or the model skip themselves if those files are abse
 
 **App**
 - **Sign-in doesn't survive a browser refresh.** Streamlit keeps it in the session, so you log in again after reloading.
-- **Firestore is optional.** Firebase Authentication is required for accounts, but if Firestore isn't set up or can't be reached, the app keeps working: entries are saved locally for the current session (*"Saved locally — cloud sync unavailable"*), History shows them with a short notice, and the sidebar shows how many there are. After a failure the app waits 60 seconds before trying Firestore again, so pages don't stall. Local entries are **not** uploaded later automatically, and they are cleared when you log out or close the tab.
-- **Live webcam uses the server's camera.** On a hosted deployment, use the *Camera* snapshot option on Detect Emotion instead.
+- **Firestore is optional.** Firebase Authentication is required for accounts, but if Firestore isn't set up or can't be reached, the app keeps working: entries are saved locally for the current session and appear in History as usual. This happens silently; no cloud status is shown in the UI. After a failure the app waits 60 seconds before trying Firestore again, so pages don't stall. Local entries are **not** uploaded later automatically, and they are cleared when you log out or close the tab.
+- **No live video stream.** The camera takes single snapshots; there is no continuous live-webcam page.
 - **Rules weren't run in the emulator.** The Firebase flows were tested against a fake backend, and the security rules were not executed in the Firebase emulator, which needs Java. Before real use, check them in the Firebase console's **Rules Playground**.
 - **Insights are simple rule-based summaries** of the user's own data, not statistical or clinical analysis.
 

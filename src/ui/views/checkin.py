@@ -1,21 +1,16 @@
-"""Daily Check-In (self-reported mood) and Reflection Journal."""
+"""Daily Check-In: self-reported mood, factors and an optional written reflection."""
 import streamlit as st
 
-from src.analytics import local_time
 from src.storage import new_entry
 from src.ui import components as ui
 from src.ui import state
-from src.wellbeing import DISTRESS_NOTE, JOURNAL_PROMPTS, MOOD_FACTORS, MOOD_SUGGESTIONS, MOODS
+from src.wellbeing import DISTRESS_NOTE, MOOD_FACTORS, MOOD_SUGGESTIONS, MOODS
 
 
 def render() -> None:
     ui.page_header("How are you feeling", "A minute to notice how you're doing, in your own words.",
                    eyebrow="Reflect · Daily check-in", accent="right now?")
-    checkin_tab, journal_tab = st.tabs(["Daily check-in", "Reflection journal"])
-    with checkin_tab:
-        _checkin()
-    with journal_tab:
-        _journal()
+    _checkin()
 
 
 def _checkin() -> None:
@@ -43,10 +38,9 @@ def _checkin() -> None:
             else:
                 entry = new_entry("checkin", selfReportedMood=mood, moodFactors=factors or [],
                                   journalText=text.strip() if keep_note else None)
-                saved_to_cloud = state.save_entry(entry)
+                state.save_entry(entry)
                 st.session_state.last_checkin_mood = mood
-                ui.save_message(saved_to_cloud,
-                                "**Check-in saved ✨**  \nTaking a minute to reflect is already a good step.")
+                ui.save_message("**Check-in saved ✨**  \nTaking a minute to reflect is already a good step.")
 
     with side_col:
         mood = st.session_state.get("last_checkin_mood")
@@ -66,25 +60,3 @@ def _checkin() -> None:
             <div class="es-small es-muted" style="margin-top:.3rem">Only your mood, the factors you pick, and (if you
             choose) your note are saved — privately, in your own account. This is self-reported and is never
             combined into a diagnosis.</div></div>""")
-
-
-def _journal() -> None:
-    write_col, past_col = st.columns([1.6, 1], gap="large")
-    with write_col:
-        st.markdown("##### Want to put it into words?")
-        prompt = st.selectbox("Choose a prompt", JOURNAL_PROMPTS, key="j_prompt")
-        text = st.text_area(prompt, height=260, key="j_text", placeholder="Write freely — no rules, no audience…",
-                            label_visibility="collapsed")
-        ui.journal_save_button(prompt, text, key="j_save")
-        st.caption("Journal entries are private to your account.")
-    with past_col:
-        st.markdown("##### Recent reflections")
-        entries, notice = state.load_history()
-        if notice:
-            ui.soft_notice(notice)
-        journal = [e for e in entries if e.get("kind") == "journal"][:5]
-        if not journal:
-            ui.empty_state("Nothing here yet", "Your saved reflections will appear here.", icon="📓")
-        for e in journal:
-            with st.expander(f"{local_time(e):%d %b, %H:%M} · {e.get('prompt', 'Reflection')}"):
-                st.text(e.get("journalText", ""))

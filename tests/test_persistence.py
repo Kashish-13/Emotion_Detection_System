@@ -167,7 +167,7 @@ def test_journal_saves_and_appears_in_history(firebase, down):
     assert_clean(at)
     messages = " ".join(s.value for s in at.success)
     assert "Journal saved" in messages
-    assert ("Saved locally — cloud sync unavailable" in messages) is down
+    assert "cloud" not in messages.lower()  # the fallback is silent in the UI
     assert len(at.session_state["offline_history"]) == (1 if down else 0)
     assert len(cloud_entries(firebase)) == (0 if down else 1)
 
@@ -176,7 +176,7 @@ def test_journal_saves_and_appears_in_history(firebase, down):
     assert_clean(at)
     table = at.dataframe[0].value
     assert list(table["Type"]) == ["Journal"]
-    assert any(state.LOCAL_HISTORY_NOTICE in h.proto.body for h in at.html) is down
+    assert not any("cloud" in h.proto.body.lower() for h in at.html)
 
 
 def test_empty_journal_is_not_saved(firebase):
@@ -200,7 +200,7 @@ def test_daily_checkin_saves_and_appears_in_history(firebase, down):
     assert_clean(at)
     messages = " ".join(s.value for s in at.success)
     assert "Check-in saved" in messages
-    assert ("Saved locally — cloud sync unavailable" in messages) is down
+    assert "cloud" not in messages.lower()
 
     at.session_state["view"] = "history"
     at.run()
@@ -214,7 +214,7 @@ def test_history_page_without_firestore_shows_empty_state_not_a_traceback(fireba
     at = app("history")
     assert_clean(at)
     bodies = " ".join(h.proto.body for h in at.html)
-    assert "No saved check-ins yet." in bodies and state.LOCAL_HISTORY_NOTICE in bodies
+    assert "No saved check-ins yet." in bodies and "cloud" not in bodies.lower()
     assert "FirebaseError" not in bodies
 
 

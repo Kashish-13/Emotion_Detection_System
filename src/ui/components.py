@@ -13,7 +13,7 @@ from src.wellbeing import (ACTIVITIES, DISTRESS_NOTE, FEELING_ICONS, FEELINGS_AF
 
 
 def color(emotion: str | None) -> str:
-    return config.EMOTION_COLORS.get(emotion, "#8b7cf6")
+    return config.EMOTION_COLORS.get(emotion, "#4f46e5")
 
 
 def emoji(emotion: str | None) -> str:
@@ -60,12 +60,6 @@ def empty_state(title: str, text: str, icon: str = "✨") -> None:
 
 def note(text: str) -> None:
     st.html(f'<div class="es-muted es-small" style="margin-top:1rem">{escape(text)}</div>')
-
-
-def soft_notice(text: str) -> None:
-    """A calm notice for recoverable problems, instead of a red error block."""
-    st.html(f'<div class="es-glass es-small" style="padding:.75rem 1rem;border-color:rgba(232,176,35,.35)">'
-            f'☁️ {escape(text)}</div>')
 
 
 # ---------------------------------------------------------------------------
@@ -228,12 +222,9 @@ def render_activity(activity_id: str) -> None:
         feeling_after(activity_id)
 
 
-def save_message(saved_to_cloud: bool, text: str) -> None:
-    """Confirmation after state.save_entry(); says so when the entry was only saved locally."""
-    if saved_to_cloud:
-        st.success(text, icon=":material/check_circle:")
-    else:
-        st.success(f"{text}  \n✓ {state.SAVED_LOCALLY}", icon=":material/cloud_off:")
+def save_message(text: str) -> None:
+    """Confirmation after state.save_entry() (whether it reached the cloud or the local fallback)."""
+    st.success(text, icon=":material/check_circle:")
 
 
 def journal_save_button(prompt: str, text: str, key: str) -> None:
@@ -244,8 +235,8 @@ def journal_save_button(prompt: str, text: str, key: str) -> None:
         if not text.strip():
             st.warning("Write something first, then save.", icon=":material/edit:")
         else:
-            save_message(state.save_entry(new_entry("journal", prompt=prompt, journalText=text.strip())),
-                         "✓ Journal saved.")
+            state.save_entry(new_entry("journal", prompt=prompt, journalText=text.strip()))
+            save_message("✓ Journal saved.")
 
 
 def feeling_after(activity_id: str) -> None:
@@ -255,8 +246,8 @@ def feeling_after(activity_id: str) -> None:
     choice = st.pills("How do you feel after this?", FEELINGS_AFTER, key=f"feel_{activity_id}",
                       format_func=lambda f: f"{FEELING_ICONS[f]} {f}", label_visibility="collapsed")
     if choice and st.button("Save reflection", key=f"save_feel_{activity_id}", icon=":material/check:"):
-        save_message(state.save_entry(new_entry("reset", activity=activity_id, feelingAfter=choice)),
-                     "✓ Reflection saved.")
+        state.save_entry(new_entry("reset", activity=activity_id, feelingAfter=choice))
+        save_message("✓ Reflection saved.")
     if choice == "Still difficult":
         st.info(DISTRESS_NOTE, icon=":material/favorite:")
     st.caption("This is a self-reflection, not a test or an assessment.")

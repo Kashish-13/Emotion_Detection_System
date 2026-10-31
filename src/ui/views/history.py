@@ -16,15 +16,13 @@ from src.wellbeing import ACTIVITIES, MOOD_SCORE, MOODS
 RANGES = {"7 days": 7, "30 days": 30, "All time": None}
 KIND_LABEL = {"detection": "Detection", "checkin": "Check-in", "journal": "Journal", "reset": "Wellbeing activity"}
 # Self-reported mood uses one violet hue, lighter for brighter moods (it is not an emotion class).
-MOOD_COLOR = {"Great": "#c4bdfd", "Good": "#a99ffb", "Okay": "#8b7cf6", "Low": "#6d5ad8", "Difficult": "#5140b0"}
+MOOD_COLOR = {"Great": "#a5b4fc", "Good": "#818cf8", "Okay": "#6366f1", "Low": "#4f46e5", "Difficult": "#3730a3"}
 EMOTION_SCALE = alt.Scale(domain=list(config.EMOTION_COLORS), range=list(config.EMOTION_COLORS.values()))
 
 
 def render() -> None:
     ui.page_header("History &", "Patterns in your own saved check-ins.", eyebrow="Reflect · History", accent="insights")
-    all_entries, notice = state.load_history()
-    if notice:
-        ui.soft_notice(notice)
+    all_entries, _ = state.load_history()
     if not all_entries:
         ui.empty_state("No saved check-ins yet.", "Your story starts here — complete your first check-in to see "
                        "your personal patterns.", icon="🌱")
@@ -115,7 +113,7 @@ def _expression_distribution(counts: dict) -> None:
                                                                              scale=EMOTION_SCALE))
     st.markdown("**Expression distribution**")
     st.altair_chart((chart + base.mark_text(align="left", dx=4).encode(text="Count:Q")).properties(height=210),
-                    width="stretch")
+                    width="stretch", theme=None)
 
 
 def _expression_timeline(det: list[dict]) -> None:
@@ -129,7 +127,7 @@ def _expression_timeline(det: list[dict]) -> None:
         tooltip=[alt.Tooltip("Time:T", format="%d %b %Y, %H:%M"), "Expression",
                  alt.Tooltip("Confidence:Q", format=".0%")]).properties(height=230)
     st.markdown("**Expression timeline**")
-    st.altair_chart(chart, width="stretch")
+    st.altair_chart(chart, width="stretch", theme=None)
 
 
 def _confidence_trend(det: list[dict]) -> None:
@@ -145,7 +143,7 @@ def _confidence_trend(det: list[dict]) -> None:
                           "label": ["Low / moderate", "Moderate / high"]})
     rules = alt.Chart(bands).mark_rule(strokeDash=[4, 4], opacity=0.45).encode(y="y:Q", tooltip=["label"])
     st.markdown("**Confidence trend**")
-    st.altair_chart((rules + line).properties(height=200), width="stretch")
+    st.altair_chart((rules + line).properties(height=200), width="stretch", theme=None)
     st.caption(f"Dashed lines: the app's confidence bands ({config.MODERATE_CONFIDENCE:.0%} and "
                f"{config.HIGH_CONFIDENCE:.0%}).")
 
@@ -157,33 +155,33 @@ def _mood_distribution(moods: list[dict]) -> None:
     base = alt.Chart(df).encode(y=alt.Y("Mood:N", sort=None, title=None),
                                 x=alt.X("Count:Q", title=None, axis=alt.Axis(tickMinStep=1)), tooltip=["Mood", "Count"])
     st.markdown("**Mood distribution**")
-    st.altair_chart((base.mark_bar(cornerRadiusEnd=4, height=14, color="#8b7cf6")
+    st.altair_chart((base.mark_bar(cornerRadiusEnd=4, height=14, color="#6366f1")
                      + base.mark_text(align="left", dx=4).encode(text="Count:Q")).properties(height=190),
-                    width="stretch")
+                    width="stretch", theme=None)
 
 
 def _mood_trend(moods: list[dict]) -> None:
     df = pd.DataFrame({"Time": [local_time(e).replace(tzinfo=None) for e in moods],
                        "Score": [MOOD_SCORE[e["selfReportedMood"]] for e in moods],
                        "Mood": [e["selfReportedMood"] for e in moods]})
-    chart = alt.Chart(df).mark_line(point=alt.OverlayMarkDef(size=60), strokeWidth=2, color="#8b7cf6").encode(
+    chart = alt.Chart(df).mark_line(point=alt.OverlayMarkDef(size=60), strokeWidth=2, color="#6366f1").encode(
         x=alt.X("Time:T", title=None, axis=alt.Axis(format="%d %b", labelAngle=0)),
         y=alt.Y("Score:Q", scale=alt.Scale(domain=[1, 5]), title=None,
                 axis=alt.Axis(values=[1, 2, 3, 4, 5], labelExpr="['','Difficult','Low','Okay','Good','Great'][datum.value]")),
         tooltip=[alt.Tooltip("Time:T", format="%d %b %Y, %H:%M"), "Mood"]).properties(height=200)
     st.markdown("**Mood over time**")
-    st.altair_chart(chart, width="stretch")
+    st.altair_chart(chart, width="stretch", theme=None)
 
 
 def _per_day(entries: list[dict]) -> None:
     days = pd.Series([local_time(e).date() for e in entries]).value_counts().sort_index()
     df = pd.DataFrame({"Day": pd.to_datetime(days.index), "Entries": days.values})
-    chart = alt.Chart(df).mark_bar(cornerRadiusEnd=3, color="#8b7cf6", size=14).encode(
+    chart = alt.Chart(df).mark_bar(cornerRadiusEnd=3, color="#6366f1", size=14).encode(
         x=alt.X("Day:T", title=None, axis=alt.Axis(format="%d %b", labelAngle=0)),
         y=alt.Y("Entries:Q", title=None, axis=alt.Axis(tickMinStep=1)),
         tooltip=[alt.Tooltip("Day:T", format="%d %b %Y"), "Entries"]).properties(height=180)
     st.markdown("**Check-ins per day**")
-    st.altair_chart(chart, width="stretch")
+    st.altair_chart(chart, width="stretch", theme=None)
 
 
 def _activity_table(entries: list[dict]) -> pd.DataFrame:
@@ -226,5 +224,5 @@ def _run(action, message: str) -> None:
         st.toast(message, icon=":material/check:")
         st.rerun()
     else:
-        st.warning("Cloud history is unavailable right now, so entries stored in the cloud couldn't be deleted. "
-                   "Locally saved entries were removed. Please try again later.", icon=":material/cloud_off:")
+        st.warning("Some entries couldn't be deleted right now. Please try again in a minute.",
+                   icon=":material/info:")

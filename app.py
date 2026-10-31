@@ -12,7 +12,7 @@ import streamlit as st
 
 from src import config
 from src.ui import state, theme
-from src.ui.views import about, checkin, dashboard, detect, history, landing, model_insights, toolkit, webcam
+from src.ui.views import about, checkin, dashboard, detect, history, landing, model_insights, toolkit
 
 st.set_page_config(page_title=config.APP_NAME, page_icon=str(config.ASSETS_DIR / "icon.svg"), layout="wide")
 
@@ -22,7 +22,6 @@ def build_pages() -> dict:
         "dashboard": st.Page(dashboard.render, title="Dashboard", icon=":material/space_dashboard:",
                              url_path="dashboard", default=True),
         "detect": st.Page(detect.render, title="Detect Emotion", icon=":material/photo_camera:", url_path="detect"),
-        "webcam": st.Page(webcam.render, title="Live Webcam", icon=":material/videocam:", url_path="webcam"),
         "checkin": st.Page(checkin.render, title="Daily Check-In", icon=":material/edit_note:", url_path="checkin"),
         "wellbeing": st.Page(toolkit.render, title="Wellbeing", icon=":material/spa:", url_path="wellbeing"),
         "history": st.Page(history.render, title="History & Insights", icon=":material/insights:",
@@ -42,19 +41,12 @@ def sidebar() -> None:
         if state.is_guest():
             subtitle, status = "Not signed in", '<span class="es-status guest"><i></i>Guest · this session only</span>'
         else:
-            badges = {"synced": ("cloud", "Signed in · history synced"),
-                      "unavailable": ("guest", "Signed in · saving locally")}
-            css, label = badges.get(state.cloud_status(), ("cloud", "Signed in"))
-            subtitle, status = state.email(), f'<span class="es-status {css}"><i></i>{label}</span>'
+            subtitle, status = state.email(), '<span class="es-status signed"><i></i>Signed in</span>'
         st.html(f"""<div class="es-glass" style="padding:.85rem .9rem"><div class="es-profile">
             <div class="es-avatar">{escape(name[:1].upper())}</div>
             <div style="min-width:0"><div style="font-weight:700">{escape(name)}</div>
             <div class="es-small es-muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
             {escape(subtitle)}</div></div></div>{status}</div>""")
-        unsynced = len(state.offline_history())
-        if unsynced:
-            st.caption(f":material/cloud_off: {unsynced} entr{'y' if unsynced == 1 else 'ies'} saved locally for "
-                       "this session — cloud sync unavailable.")
         if st.button("Log out", icon=":material/logout:", width="stretch", key="logout"):
             state.logout()
             st.rerun()
@@ -73,7 +65,7 @@ def main() -> None:
     pages = build_pages()
     nav = st.navigation({
         "Home": [pages["dashboard"]],
-        "Analyze": [pages["detect"], pages["webcam"]],
+        "Analyze": [pages["detect"]],
         "Reflect": [pages["checkin"], pages["wellbeing"], pages["history"]],
         "Learn": [pages["insights"], pages["about"]],
     })

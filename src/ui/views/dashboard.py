@@ -11,16 +11,14 @@ from src.wellbeing import ACTIVITIES, DISCLAIMER, MOOD_SUGGESTIONS, MOODS, sugge
 
 KIND_TEXT = {"detection": "Expression saved", "checkin": "Daily check-in", "journal": "Journal entry",
              "reset": "Wellbeing activity"}
-MOOD_COLOR = "#8b7cf6"
+MOOD_COLOR = "#4f46e5"
 
 
 def render() -> None:
-    entries, notice = state.load_history()
+    entries, _ = state.load_history()
     stats = history_stats(entries)
 
     ui.page_header(f"Good to see you, {state.display_name()} 👋", "How are you feeling today?", eyebrow="Dashboard")
-    if notice:
-        ui.soft_notice(notice)
     if state.is_guest():
         st.caption(":material/info: Guest mode — your check-ins are kept only until you close this tab.")
 
@@ -31,7 +29,7 @@ def render() -> None:
             ui.emotion_card(current["emotion"], current["confidence"], "Current emotion",
                             meta=current["meta"])
         else:
-            st.html("""<div class="es-glass es-emotion-card" style="--c:#8b7cf6">
+            st.html("""<div class="es-glass es-emotion-card" style="--c:#4f46e5">
                 <div class="es-eyebrow">Current emotion</div>
                 <div class="es-emotion-main"><div class="es-emoji-orb" aria-hidden="true">✨</div>
                 <div><div class="es-emotion-name" style="font-size:1.7rem;letter-spacing:0">Nothing analysed yet</div>
@@ -41,8 +39,9 @@ def render() -> None:
         if b1.button("Analyze again" if current else "Analyze my emotion", type="primary",
                      icon=":material/center_focus_strong:", width="stretch", key="dash_analyze"):
             state.go("detect")
-        if b2.button("Live webcam", icon=":material/videocam:", width="stretch", key="dash_webcam"):
-            state.go("webcam")
+        if b2.button("Use camera", icon=":material/videocam:", width="stretch", key="dash_webcam"):
+            st.session_state.detect_source = "Camera"  # opens Detect Emotion on its camera option
+            state.go("detect")
     with side:
         if current and current["probabilities"]:
             ui.emotion_bars(current["probabilities"], "Emotion probabilities")

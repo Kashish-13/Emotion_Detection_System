@@ -34,7 +34,6 @@ def init() -> None:
         "guest_history": [],        # guest-mode saved entries
         "offline_history": [],      # signed-in entries saved locally while Firestore is unavailable
         "cloud_retry_at": 0.0,      # after a Firestore failure, skip the cloud until this time
-        "cloud_status": "unknown",  # "synced" | "unavailable" | "unknown" (sidebar badge)
         "session_predictions": [],  # webcam/image predictions this session (not saved)
         "faces_detected": 0,
         "activity": None,           # open wellbeing activity id
@@ -106,7 +105,6 @@ def _fresh_user() -> FirebaseUser:
 # a timeout on every rerun.
 # ---------------------------------------------------------------------------
 CLOUD_RETRY_S = 60
-SAVED_LOCALLY = "Saved locally — cloud sync unavailable."
 LOCAL_HISTORY_NOTICE = "Cloud history is unavailable. Showing your locally saved entries."
 
 
@@ -139,20 +137,10 @@ def cloud_available() -> bool:
     return time.time() >= st.session_state.get("cloud_retry_at", 0.0)
 
 
-def cloud_status() -> str:
-    """For the sidebar: "synced" (last cloud call worked), "unavailable", or "unknown" (not tried yet)."""
-    return st.session_state.get("cloud_status", "unknown")
-
-
-def _cloud_ok() -> None:
-    st.session_state["cloud_status"] = "synced"
-
-
 def _cloud_failed(err: Exception) -> None:
     log.warning("Firestore unavailable (%s); using local history for %ss",
                 getattr(err, "code", "") or type(err).__name__, CLOUD_RETRY_S)
     st.session_state["cloud_retry_at"] = time.time() + CLOUD_RETRY_S
-    st.session_state["cloud_status"] = "unavailable"
 
 
 def load_history() -> tuple[list[dict], str | None]:
@@ -166,7 +154,6 @@ def load_history() -> tuple[list[dict], str | None]:
         except CloudStorageError as err:
             _cloud_failed(err)
         else:
-            _cloud_ok()
             return sorted(cloud + local, key=lambda e: e.get("timestamp", ""), reverse=True), None
     return local, LOCAL_HISTORY_NOTICE
 
@@ -179,7 +166,6 @@ def save_entry(entry: dict) -> bool:
     if cloud_available():
         try:
             history_store().add(entry)
-            _cloud_ok()
             return True
         except CloudStorageError as err:
             _cloud_failed(err)

@@ -1,23 +1,22 @@
-# EmotionSense theme: dark-first. Custom styling lives in src/ui/theme.py.
+# EmotionSense theme: light, clean product style. Custom styling lives in src/ui/theme.py.
 [theme]
-base = "dark"
-primaryColor = "#8b7cf6"
-backgroundColor = "#0a0c16"
-secondaryBackgroundColor = "#151a2c"
-textColor = "#e9ebf7"
-borderColor = "#262c45"
-linkColor = "#a99ffb"
-font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap, sans-serif"
-headingFont = "Space Grotesk:https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap, Inter, sans-serif"
-baseRadius = "0.9rem"
-buttonRadius = "full"
+base = "light"
+primaryColor = "#4f46e5"
+backgroundColor = "#f5f7fb"
+secondaryBackgroundColor = "#eef0f5"
+textColor = "#1f2430"
+borderColor = "#e3e6ee"
+linkColor = "#4f46e5"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap, sans-serif"
+baseRadius = "0.6rem"
+buttonRadius = "0.6rem"
 showWidgetBorder = true
-showSidebarBorder = false
+showSidebarBorder = true
 headingFontWeights = [700, 650, 600, 600, 600, 600]
 
 [theme.sidebar]
-backgroundColor = "#0d1020"
-secondaryBackgroundColor = "#161b30"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f3f4f8"
 
 [client]
 toolbarMode = "minimal"
