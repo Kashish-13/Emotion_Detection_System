@@ -1,8 +1,15 @@
-# Emotion Detection System
+# Emotion Detection System: EmotionSense
 
-Facial-expression recognition with a custom CNN trained on **FER-2013**, OpenCV face detection, Grad-CAM explainability, real-time webcam inference and a Streamlit interface. It was built and trained locally on a CPU-only Windows laptop.
+*Understand your expression. Reflect. Take a mindful step.*
 
-> **Responsible-use note:** this system classifies **facial expressions** in images. It does not detect what a person actually feels and is not a medical, psychological or hiring tool. See [Ethical considerations](#ethical-considerations).
+**EmotionSense** has two parts:
+
+1. A **deep-learning facial-expression recogniser**: a custom CNN trained on **FER-2013**, with OpenCV face detection, Grad-CAM explainability and real-time webcam inference. It was trained and evaluated locally on a CPU-only Windows laptop.
+2. A **personal reflection and wellbeing dashboard** in Streamlit, with Firebase accounts, daily check-ins, a journal, a wellbeing toolkit and history insights.
+
+The second part turns a detected expression into an invitation to check in with yourself.
+
+> **Responsible-use note:** EmotionSense classifies **facial expressions** in images. Facial expressions are not a reliable measure of what someone actually feels. It is **not** a medical, psychological, diagnostic or hiring tool, and its wellbeing suggestions are general ideas, not professional advice. See [Ethical considerations](#ethical-considerations).
 
 ---
 
@@ -20,28 +27,45 @@ All numbers in this README come from `results/metrics.json` and `results/trainin
 
 ## Features
 
+### Machine learning and computer vision
+
 - **Face detection** with OpenCV's Haar cascade, supporting **multiple faces** per image.
-- **Prediction for each face** with confidence, **top-3 alternatives** and the full **7-class probability chart**.
-- **Confidence bands** (High ≥ 70%, Moderate 40–70%, Low < 40%) with a low-confidence warning. The thresholds are checked against validation accuracy (see [Results](#results)).
+- **Prediction for each face** with confidence, **top-3 alternatives** and the full **7-class probability distribution**.
+- **Confidence bands** (High ≥ 70%, Moderate 40–70%, Low < 40%) with a gentle low-confidence warning. The thresholds are checked against validation accuracy (see [Results](#results)).
 - **Grad-CAM** "model attention" heatmap for every detected face.
-- **Live webcam mode** with Start/Stop control. Prediction runs every 3rd frame to save CPU.
-- **Session analytics:** prediction counts, most frequent expression, average confidence.
+- **Live webcam** with Start/Pause control, a live face count, the main expression, confidence and FPS. Prediction runs every 3rd frame to save CPU.
 - **Leakage-aware evaluation:** FER-2013's cross-split duplicate images are detected and reported transparently.
-- **Friendly error handling** for a missing model, missing dataset, invalid image, no face, a very small face, or an unavailable webcam.
 
-## Demo
+### EmotionSense app
 
-Output of the real inference pipeline (`src/predict.py`) on four FER-2013 test faces that the model never saw in train or validation:
+- **Accounts:** Firebase email/password sign-up, login, logout and password reset. There's also a **guest mode** that saves nothing beyond the browser session.
+- **Dashboard:** today's check-ins, main expression, average confidence, current streak, quick actions, recent snapshots and *Recommended for you*.
+- **Detect Emotion:** upload a photo or take a camera snapshot. You get result cards per face, *What you can do next* and **Save check-in**. The image itself is never stored.
+- **Daily Check-In:** self-reported mood, the factors affecting it and an optional note, plus a **Reflection Journal** with prompts.
+- **Wellbeing toolkit:** *Feeling overwhelmed?* quick resets and 8 short activities, including an animated breathing guide, step-by-step 5-4-3-2-1 grounding and timers. Each ends with a *How do you feel after this?* reflection.
+- **History & Insights:** charts and rule-based insights that keep the **model signal** (detected expressions) clearly apart from **self-reported mood**. You can delete one entry or all your data.
+- **Model Insights:** the full evaluation story, including why accuracy isn't enough and the leakage-aware results.
+- **Light and dark themes**, with the colour palette checked for colour-blind readability.
 
-![Pipeline demo](results/demo_multi_face.png)
+## Screenshots
 
-The box colour and label show the confidence band. The third face is turned sharply and is **missed by the frontal Haar detector**, which is a real limitation of this design and is shown here deliberately.
+These are captured from the running app in headless Chrome (guest mode, light theme unless noted).
 
-*Screenshots of the Streamlit app are not included yet. Run `streamlit run app.py` to see it.*
+| Landing | Dashboard |
+|---|---|
+| ![Landing](docs/screenshots/landing.png) | ![Dashboard](docs/screenshots/dashboard.png) |
+| **Detect Emotion** (multi-face upload) | **Wellbeing**: 1-minute reset |
+| ![Detect](docs/screenshots/detect.png) | ![Wellbeing](docs/screenshots/wellbeing.png) |
+| **History & Insights** | **Model Insights** |
+| ![History](docs/screenshots/history.png) | ![Model insights](docs/screenshots/model_insights.png) |
+| **Dashboard, dark theme** | **Inference pipeline output** (`src/predict.py`) |
+| ![Dark](docs/screenshots/dashboard_dark.png) | ![Pipeline demo](results/demo_multi_face.png) |
+
+The pipeline demo uses four FER-2013 test faces the model never saw during training. The third face is turned sharply and is **missed by the frontal Haar detector**. This is a real limitation, shown deliberately.
 
 ## Tech stack
 
-Python 3.13 · TensorFlow 2.21 / Keras 3 · OpenCV 4.14 · NumPy · pandas · scikit-learn · Matplotlib · Streamlit 1.66 (Altair charts) · pytest
+Python 3.13 · TensorFlow 2.21 / Keras 3 · OpenCV 4.14 · NumPy · pandas · scikit-learn · Matplotlib · Streamlit 1.66 (Altair charts) · Firebase Authentication and Cloud Firestore (REST API via `requests`) · pytest
 
 > OpenCV is pinned to `<5` because OpenCV 5 removed `cv2.CascadeClassifier` and its bundled Haar-cascade files.
 
@@ -201,25 +225,102 @@ Grad-CAM weights the last convolutional feature map (`block4_2_relu`, 6×6) by t
 - **Several misclassifications** attend to hair, background or a beard, which helps explain the error.
 - Grad-CAM shows **where the model looked**. It does not prove the model's reasoning is correct. The heatmap is coarse (6×6) and says nothing about what a person feels.
 
-## Streamlit application
+## EmotionSense application
 
-| Page | Contents |
-|---|---|
-| 🏠 Home | Overview, pipeline, supported expressions, key metrics, model summary |
-| 📷 Image Detection | Upload, multi-face boxes, prediction and confidence band, top-3, probability chart, Grad-CAM, session analytics |
-| 🎥 Live Webcam | Start/stop toggle, live boxes and labels, live session summary |
-| 📊 Model Insights | Official vs leakage-aware metrics, curves, confusion matrices, per-class metrics, Grad-CAM, confidence reliability, limitations |
-| ℹ️ About | Dataset, architecture, preprocessing, evaluation method, ethics |
+### Pages
 
-The webcam is read with OpenCV **on the machine running Streamlit**, so live mode works when the app runs locally. Frames are processed in memory and never stored.
+| Section | Page | What it does |
+|---|---|---|
+| Home | **Dashboard** | Greeting, summary cards (today's check-ins, main expression, average confidence, streak), quick actions, recent snapshots, *Recommended for you* |
+| Detect | **Detect Emotion** | Upload or camera snapshot, then face boxes, a result card per face, top-3, probability chart, Grad-CAM, suggestions and *Save check-in* |
+| Detect | **Live Webcam** | Start/Pause, live annotated preview, face count, main expression, confidence, FPS, save while paused, session summary |
+| Reflect | **Daily Check-In** | Mood (😄 Great to 😣 Difficult), factors, optional note, and a **Reflection Journal** with prompts |
+| Reflect | **Wellbeing** | *Feeling overwhelmed?* quick resets, 8 toolkit activities, *How do you feel after this?* |
+| Reflect | **History & Insights** | Time-range filter; **model signal** and **self-reported mood** charts side by side; rule-based insights; activity table; delete data |
+| Learn | **Model Insights** | Leakage-aware and official metrics, *why accuracy isn't enough*, architecture, curves, confusion matrices, per-class metrics, Grad-CAM |
+| Learn | **About** | How it works, technology, limitations, privacy |
+
+The live webcam is read with OpenCV **on the machine running Streamlit**, so it works when the app runs locally. The *Camera* option on Detect Emotion uses the browser's camera instead, and also works when the app is hosted.
+
+### Architecture
+
+```
+Browser ── Streamlit (app.py) ── src/ui/views/*  (one module per page)
+                │                     │
+                │                     ├── src/predict.py ─ face_detector · preprocessing · CNN · gradcam
+                │                     ├── src/wellbeing.py  (suggestions, activities, prompts)
+                │                     └── src/analytics.py  (stats, streaks, rule-based insights)
+                │
+                └── src/ui/state.py ── src/storage.py ─┬─ SessionHistoryStore   (guest: in-memory only)
+                                                       └─ FirestoreHistoryStore ─ src/firebase_client.py
+                                                                                     │  REST + user's ID token
+                                                                          Firebase Auth · Cloud Firestore
+```
+
+- **No backend server and no service account.** The app calls Firebase's REST API **as the signed-in user**, with their own ID token. Firestore **security rules** therefore decide what each user can access.
+- **The ML pipeline is unchanged.** The UI only calls `EmotionPredictor.analyze()` and `GradCAM`.
+
+### Firebase setup
+
+Accounts are optional; without Firebase the app runs in guest mode. To enable them:
+
+1. Create a project at <https://console.firebase.google.com>.
+2. Go to **Build → Authentication → Sign-in method** and enable **Email/Password**.
+3. Go to **Build → Firestore Database** and create a database in **production mode**.
+4. In **Firestore → Rules**, paste the contents of [`firestore.rules`](firestore.rules) and publish. With the Firebase CLI you can instead run `firebase deploy --only firestore:rules`.
+5. In **Project settings → General**, copy the **Web API key** and **Project ID** into `.streamlit/secrets.toml`:
+
+   ```bash
+   copy .streamlit\secrets.toml.example .streamlit\secrets.toml     # then edit the two values
+   ```
+
+   ```toml
+   [firebase]
+   api_key = "YOUR_FIREBASE_WEB_API_KEY"
+   project_id = "your-firebase-project-id"
+   ```
+
+   Alternatively, set the environment variables `FIREBASE_API_KEY` and `FIREBASE_PROJECT_ID`.
+
+`secrets.toml` is git-ignored. The Web API key only identifies the project to Firebase; data access is controlled by the security rules. No admin or service-account credentials are used anywhere.
+
+### Data model and security rules
+
+```
+users/{uid}/checkins/{checkinId}
+    userId, kind ("detection" | "checkin" | "journal" | "reset"), timestamp (UTC ISO-8601)
+    detection: detectedEmotion, confidence, topPredictions[{emotion, probability}], source, selfReportedMood?
+    checkin:   selfReportedMood, moodFactors[], journalText?   (the note is saved only if the user keeps the toggle on)
+    journal:   prompt, journalText
+    reset:     activity, feelingAfter
+```
+
+[`firestore.rules`](firestore.rules) works as follows:
+
+- A user can **read, create and delete only under their own `users/{uid}` path**.
+- Each new entry must carry the user's own `userId` and a known `kind`.
+- Entries can't be edited after creation.
+- Everything else is denied.
+
+**Privacy:**
+- Uploaded images and webcam frames are **never stored**; they're analysed in memory and discarded.
+- Only the fields listed above are saved, and only when the user presses **Save**.
+- Users can delete one entry or all their history from **History & Insights**.
+
+### Wellbeing wording
+
+- The app describes **expressions** ("Your facial expression appears…", "The model detected…"), never feelings or conditions.
+- A test (`tests/test_wellbeing.py`) scans all user-facing source for diagnostic phrases such as "you are stressed" or "you have anxiety".
+- Suggestions are general wellbeing ideas, labelled as *not medical advice*.
+- The Wellbeing page always shows a note about reaching out to a qualified professional or someone you trust.
 
 ## Project structure
 
 ```
 Emotion_Detection_System/
-├── app.py                      # Streamlit application
+├── app.py                      # Streamlit entry point: theme, sign-in gate, navigation
 ├── src/
-│   ├── config.py               # all paths, labels, hyperparameters, thresholds
+│   ├── config.py               # paths, labels, hyperparameters, thresholds, colours, Firebase settings
 │   ├── data_loader.py          # FER-2013 loading (+ --download), .npz cache
 │   ├── data_quality.py         # blank images, cross-split duplicates, leakage-aware mask
 │   ├── preprocessing.py        # to_model_input, augmentation, tf.data, class weights
@@ -229,10 +330,25 @@ Emotion_Detection_System/
 │   ├── face_detector.py        # Haar cascade detection + padded crops
 │   ├── predict.py              # inference pipeline, error types, annotation
 │   ├── gradcam.py              # Grad-CAM + example grids
-│   ├── analytics.py            # session summary
-│   └── utils.py                # plot style, figure saving
+│   ├── firebase_client.py      # Firebase Auth + Firestore over REST (user-scoped)
+│   ├── storage.py              # history entries; Firestore and guest-session stores
+│   ├── wellbeing.py            # suggestions, activities, check-in options, journal prompts
+│   ├── analytics.py            # session summary, history stats, streaks, insights
+│   ├── utils.py                # plot style, figure saving
+│   └── ui/
+│       ├── theme.py            # global CSS (works in light and dark themes)
+│       ├── components.py       # cards, result card, charts, activities
+│       ├── state.py            # sign-in state, token refresh, history store, routing
+│       ├── resources.py        # cached model + Grad-CAM
+│       └── views/              # landing, dashboard, detect, webcam, checkin, toolkit, history, model_insights, about
+├── .streamlit/
+│   ├── config.toml             # light + dark theme
+│   └── secrets.toml.example    # Firebase config template (real secrets.toml is git-ignored)
+├── firestore.rules             # per-user Firestore security rules
+├── assets/                     # logo + icon (SVG)
+├── docs/screenshots/           # screenshots of the running app
 ├── notebooks/eda_and_model_analysis.ipynb
-├── tests/                      # pytest: preprocessing, inference, Streamlit pages
+├── tests/                      # pytest: ML pipeline, Firebase client, wellbeing/analytics, app pages and auth
 ├── models/emotion_model.keras  # trained model (8.7 MB)
 ├── results/                    # metrics, reports, figures, Grad-CAM examples
 ├── data/README.md              # dataset instructions (data itself is git-ignored)
@@ -260,7 +376,9 @@ The trained model is included in `models/emotion_model.keras`, so the app runs w
 streamlit run app.py
 ```
 
-To reproduce the full pipeline:
+Choose **Continue as guest**, or configure Firebase (see [Firebase setup](#firebase-setup)) to enable accounts and saved history.
+
+To reproduce the ML pipeline:
 
 ```bash
 python -m src.data_loader --download   # get FER-2013 (~136 MB) and verify class counts
@@ -279,25 +397,21 @@ Open `notebooks/eda_and_model_analysis.ipynb` with the `.venv` interpreter selec
 pytest -q
 ```
 
-There are 40 tests covering:
+There are 75 tests, and none of them need a network connection or a real Firebase project.
 
-- label mapping
-- preprocessing shape and range
-- class weights
-- deterministic validation pipeline
-- blank and leakage masks
-- prediction format, probabilities summing to 1, and top-3 ordering
-- confidence bands and the low-confidence warning
-- no-face, invalid-image, missing-model and corrupt-model handling
-- multi-face detection and annotation on real FER faces
-- Grad-CAM
-- session analytics
-- rendering of every Streamlit page
+| File | Covers |
+|---|---|
+| `test_preprocessing.py` | Labels, input shape and range, class weights, deterministic validation pipeline, blank and leakage masks |
+| `test_inference.py` | Prediction format, probabilities summing to 1, top-3, confidence bands, low-confidence warning, no-face, invalid image, missing or corrupt model, multi-face on real FER faces, Grad-CAM |
+| `test_firebase.py` | Auth request payloads, friendly errors, token refresh, Firestore encoding, **every request scoped to `users/{own uid}`**, path-escape protection, per-user data isolation |
+| `test_wellbeing.py` | Suggestion and activity coverage, non-diagnostic wording scan, storage (no image data saved), streaks, stats, insights |
+| `test_app.py` | Every page renders; guest flow; daily check-in submission; wellbeing activity and reflection; history deletion; **sign-up → logout → wrong password → login → password reset** against an in-memory fake Firebase |
 
 Tests that need the dataset or the model skip themselves if those files are absent.
 
 ## Limitations
 
+**Model**
 - **Accuracy ceiling:** about 60% on unseen test faces. Fear, Sad, Angry and Disgust are often confused.
 - **Disgust estimates are noisy:** only 55 test images (38 leakage-aware). The model also over-predicts Disgust because of its class weight.
 - **Frontal faces only:** the Haar detector misses turned or tilted faces and can produce false positives on textured backgrounds.
@@ -305,13 +419,20 @@ Tests that need the dataset or the model skip themselves if those files are abse
 - **Leakage handling covers exact duplicates only.** Near-duplicates are not detected.
 - **Augmentation artifacts:** shifted training images smear edge pixels (`fill_mode="nearest"`).
 
+**App**
+- **Sign-in doesn't survive a browser refresh.** Streamlit keeps it in the session, so you log in again after reloading.
+- **Live webcam uses the server's camera.** On a hosted deployment, use the *Camera* snapshot option on Detect Emotion instead.
+- **Rules weren't run in the emulator.** The Firebase flows were tested against a fake backend, and the security rules were not executed in the Firebase emulator, which needs Java. Before real use, check them in the Firebase console's **Rules Playground**.
+- **Insights are simple rule-based summaries** of the user's own data, not statistical or clinical analysis.
+
 ## Ethical considerations
 
 - **Expressions are not emotions.** A smile is not proof of happiness, and expressions vary by culture, individual and context.
 - The model must **not** be used to diagnose mental health, judge honesty, screen job candidates, monitor students or employees, or infer personality.
 - FER-2013's **demographic composition is undocumented**, and performance across groups has **not been audited**. It may be uneven.
 - FER-2013 labels are noisy (some duplicated images carry different labels), so the labels themselves are imperfect.
-- The app uses wording such as *"detected facial expression"*, never *"you are feeling…"*, and processes webcam frames locally without storing them.
+- The app uses wording such as *"detected facial expression"*, never *"you are feeling…"*. It keeps model output separate from self-reported mood, and processes images and webcam frames in memory without storing them.
+- Wellbeing features are self-reflection tools. They are never triggered or scored by the model, and the app points to qualified professionals for persistent or severe distress.
 
 ## Future improvements
 
