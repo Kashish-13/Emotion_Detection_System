@@ -12,7 +12,7 @@ requests>=2.31         # Firebase Auth + Firestore REST calls
 
 # OpenCV 5 removed the Haar-cascade face detector (cv2.CascadeClassifier) and its
 # bundled XML files, which this project uses, so stay on the 4.x line.
-opencv-python>=4.10,<5
+opencv-python-headless>=4.10,<5
 
 # Development / notebooks / tests
 pytest>=8.0
