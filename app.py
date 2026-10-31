@@ -386,16 +386,20 @@ Python · TensorFlow/Keras · OpenCV · NumPy · pandas · scikit-learn · Matpl
 
 
 # ---------------------------------------------------------------------------
-init_session()
-with st.sidebar:
-    st.markdown("### Emotion Detection System")
-    st.caption("Facial-expression classifier (FER-2013). Not a diagnostic tool.")
+def main():
+    init_session()
+    with st.sidebar:
+        st.markdown("### Emotion Detection System")
+        st.caption("Facial-expression classifier (FER-2013). Not a diagnostic tool.")
+    pages = [
+        st.Page(home_page, title="Home", icon="🏠", default=True, url_path="home"),
+        st.Page(image_page, title="Image Detection", icon="📷", url_path="image"),
+        st.Page(webcam_page, title="Live Webcam", icon="🎥", url_path="webcam"),
+        st.Page(insights_page, title="Model Insights", icon="📊", url_path="insights"),
+        st.Page(about_page, title="About", icon="ℹ️", url_path="about"),
+    ]
+    st.navigation(pages).run()
 
-pages = [
-    st.Page(home_page, title="Home", icon="🏠", default=True, url_path="home"),
-    st.Page(image_page, title="Image Detection", icon="📷", url_path="image"),
-    st.Page(webcam_page, title="Live Webcam", icon="🎥", url_path="webcam"),
-    st.Page(insights_page, title="Model Insights", icon="📊", url_path="insights"),
-    st.Page(about_page, title="About", icon="ℹ️", url_path="about"),
-]
-st.navigation(pages).run()
+
+if __name__ == "__main__":  # `streamlit run app.py` executes this file as __main__
+    main()
