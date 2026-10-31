@@ -2,7 +2,11 @@
 
 *Understand your expression. Reflect. Take a mindful step.*
 
+
 🌐 **Live Demo:** https://emotiondetectionsystem-13.streamlit.app/
+
+ An end-to-end facial-expression recognition system built with a custom CNN trained on FER-2013, featuring real-time detection, Grad-CAM explainability, confidence analysis, Firebase authentication, and an interactive Streamlit dashboard.
+
 
 **EmotionSense** has two parts:
 
