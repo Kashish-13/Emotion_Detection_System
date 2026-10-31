@@ -1,0 +1,37 @@
+# EmotionSense theme. Users can switch light/dark in the app menu (⋮ → Settings).
+[theme]
+baseRadius = "0.85rem"
+buttonRadius = "full"
+showWidgetBorder = true
+showSidebarBorder = true
+headingFontWeights = [700, 650, 600, 600, 600, 600]
+
+[theme.light]
+primaryColor = "#4f5bd5"
+backgroundColor = "#f6f7fb"
+secondaryBackgroundColor = "#eceef6"
+textColor = "#1c2033"
+borderColor = "#dfe2ee"
+linkColor = "#4f5bd5"
+
+[theme.light.sidebar]
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f1f2f8"
+
+[theme.dark]
+primaryColor = "#8d95f6"
+backgroundColor = "#11131b"
+secondaryBackgroundColor = "#1d2030"
+textColor = "#e7e9f3"
+borderColor = "#2b2f42"
+linkColor = "#a3a9fa"
+
+[theme.dark.sidebar]
+backgroundColor = "#161925"
+secondaryBackgroundColor = "#1f2333"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false

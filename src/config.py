@@ -85,3 +85,26 @@ WEBCAM_DETECTION_DOWNSCALE = 0.5   # run face detection on a half-size frame
 WEBCAM_PREDICT_EVERY_N_FRAMES = 3  # reuse the last prediction in between (saves CPU)
 WEBCAM_LOG_INTERVAL_S = 1.0        # add at most one entry per face per second to session analytics
 SESSION_HISTORY_SIZE = 500         # max predictions kept for session analytics
+
+# ---------------------------------------------------------------------------
+# EmotionSense application
+# ---------------------------------------------------------------------------
+APP_NAME = "EmotionSense"
+APP_TAGLINE = "Understand your expression. Reflect. Take a mindful step."
+ASSETS_DIR = ROOT_DIR / "assets"
+
+# Accent colour per expression. Validated as an ordered categorical palette (light and
+# dark) with the data-viz palette validator; charts always label emotions directly,
+# so colour is never the only cue.
+EMOTION_COLORS = {
+    "Angry": "#e34948", "Disgust": "#008300", "Fear": "#6250d6", "Happy": "#eda100",
+    "Sad": "#2a78d6", "Surprise": "#eb6834", "Neutral": "#1baf7a",
+}
+
+# Firebase (Authentication + Firestore). Values come from .streamlit/secrets.toml
+# ([firebase] api_key / project_id) or the environment variables below — never from code.
+FIREBASE_API_KEY_ENV = "FIREBASE_API_KEY"
+FIREBASE_PROJECT_ID_ENV = "FIREBASE_PROJECT_ID"
+FIREBASE_TIMEOUT_S = 10
+HISTORY_COLLECTION = "checkins"    # stored at users/{uid}/checkins/{id}
+HISTORY_FETCH_LIMIT = 500          # newest entries loaded for dashboards
