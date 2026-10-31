@@ -1,34 +1,23 @@
-# EmotionSense theme. Users can switch light/dark in the app menu (⋮ → Settings).
+# EmotionSense theme: dark-first. Custom styling lives in src/ui/theme.py.
 [theme]
-baseRadius = "0.85rem"
+base = "dark"
+primaryColor = "#8b7cf6"
+backgroundColor = "#0a0c16"
+secondaryBackgroundColor = "#151a2c"
+textColor = "#e9ebf7"
+borderColor = "#262c45"
+linkColor = "#a99ffb"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap, sans-serif"
+headingFont = "Space Grotesk:https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap, Inter, sans-serif"
+baseRadius = "0.9rem"
 buttonRadius = "full"
 showWidgetBorder = true
-showSidebarBorder = true
+showSidebarBorder = false
 headingFontWeights = [700, 650, 600, 600, 600, 600]
 
-[theme.light]
-primaryColor = "#4f5bd5"
-backgroundColor = "#f6f7fb"
-secondaryBackgroundColor = "#eceef6"
-textColor = "#1c2033"
-borderColor = "#dfe2ee"
-linkColor = "#4f5bd5"
-
-[theme.light.sidebar]
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f1f2f8"
-
-[theme.dark]
-primaryColor = "#8d95f6"
-backgroundColor = "#11131b"
-secondaryBackgroundColor = "#1d2030"
-textColor = "#e7e9f3"
-borderColor = "#2b2f42"
-linkColor = "#a3a9fa"
-
-[theme.dark.sidebar]
-backgroundColor = "#161925"
-secondaryBackgroundColor = "#1f2333"
+[theme.sidebar]
+backgroundColor = "#0d1020"
+secondaryBackgroundColor = "#161b30"
 
 [client]
 toolbarMode = "minimal"

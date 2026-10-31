@@ -1,4 +1,5 @@
 """History & Insights: the user's own saved data, model signal and self-report kept apart."""
+from collections import Counter
 from html import escape
 
 import altair as alt
@@ -14,17 +15,24 @@ from src.wellbeing import ACTIVITIES, MOOD_SCORE, MOODS
 
 RANGES = {"7 days": 7, "30 days": 30, "All time": None}
 KIND_LABEL = {"detection": "Detection", "checkin": "Check-in", "journal": "Journal", "reset": "Wellbeing activity"}
+# Self-reported mood uses one violet hue, lighter for brighter moods (it is not an emotion class).
+MOOD_COLOR = {"Great": "#c4bdfd", "Good": "#a99ffb", "Okay": "#8b7cf6", "Low": "#6d5ad8", "Difficult": "#5140b0"}
 EMOTION_SCALE = alt.Scale(domain=list(config.EMOTION_COLORS), range=list(config.EMOTION_COLORS.values()))
 
 
 def render() -> None:
-    ui.page_header("History & insights", "Patterns in your own saved check-ins.", eyebrow="Insights")
-    all_entries, error = state.load_history()
-    if error:
-        st.error(f"Couldn't load your history: {error}")
-        return
+    ui.page_header("History &", "Patterns in your own saved check-ins.", eyebrow="Reflect · History", accent="insights")
+    all_entries, notice = state.load_history()
+    if notice:
+        ui.soft_notice(notice)
     if not all_entries:
-        ui.empty_state("No history yet", "Save a detection or complete a daily check-in to see insights here.")
+        ui.empty_state("Your story starts here.", "Complete your first check-in to see your personal patterns.",
+                       icon="🌱")
+        a, b, _ = st.columns([1, 1, 2])
+        if a.button("Daily check-in", type="primary", icon=":material/edit_note:", width="stretch", key="hist_ci"):
+            state.go("checkin")
+        if b.button("Detect emotion", icon=":material/photo_camera:", width="stretch", key="hist_det"):
+            state.go("detect")
         return
 
     span = st.segmented_control("Time range", list(RANGES), default="30 days", key="hist_range") or "30 days"
@@ -34,50 +42,67 @@ def render() -> None:
 
     c = st.columns(4)
     with c[0]:
-        ui.stat_card("Total check-ins", str(stats["total"]), f"In the last {span.lower()}" if RANGES[span] else "All time")
+        ui.stat_card("Total check-ins", str(stats["total"]),
+                     f"In the last {span.lower()}" if RANGES[span] else "All time", icon="🗂️")
     with c[1]:
-        dom = stats["dominant_expression"]
-        ui.stat_card("Most common expression", dom or "—", "Model signal", emotion=dom)
+        common_mood = Counter(e["selfReportedMood"] for e in moods).most_common(1)
+        mood = common_mood[0][0] if common_mood else None
+        ui.stat_card("Most common mood", f"{MOODS[mood]} {mood}" if mood else "—", "Self-reported", icon="💬")
     with c[2]:
-        avg = stats["average_confidence"]
-        ui.stat_card("Average confidence", f"{avg:.0%}" if avg is not None else "—", f"{len(det)} saved detections")
+        factors = Counter(f for e in moods for f in e.get("moodFactors", [])).most_common(2)
+        ui.stat_card("Top factors", " · ".join(f for f, _ in factors) or "—", "Selected most often", icon="🧩")
     with c[3]:
-        ui.stat_card("Mood check-ins", str(len(moods)), "Self-reported")
+        ui.stat_card("Current streak", f"{stats['streak']} day{'s' if stats['streak'] != 1 else ''}",
+                     "Consecutive days with a check-in", icon="🔥")
 
     insights = generate_insights(entries)
     if insights:
-        st.write("")
-        st.markdown("#### Insights")
-        cards = "".join(f"""<div class="es-card"><div class="es-tag">{escape(i['source'])}</div>
-            <div style="margin-top:.25rem">{escape(i['text'])}</div></div>""" for i in insights)
-        st.html(cards)
-        st.caption("Simple patterns in your own data — not a diagnosis or an assessment of your wellbeing.")
+        ui.section("Insights", "Simple patterns in your own data — not a diagnosis or an assessment of your wellbeing.")
+        icons = {"Model signal": "🧭", "Self-reported mood": "💬", "Tip": "💡"}
+        cards = "".join(f"""<div class="es-glass lift"><div class="es-tag">{icons.get(i['source'], '')}
+            {escape(i['source'])}</div><div style="margin-top:.3rem">{escape(i['text'])}</div></div>"""
+                        for i in insights)
+        st.html(f'<div class="es-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">{cards}</div>')
 
-    st.write("")
     model_col, mood_col = st.columns(2, gap="large")
     with model_col:
-        st.markdown("#### Model signal")
-        st.caption("Facial expressions the model detected in images you saved.")
+        ui.section("🧭 Model signal", "Facial expressions the model detected in images you saved.")
         if det:
+            dom, avg = stats["dominant_expression"], stats["average_confidence"]
+            a, b = st.columns(2)
+            with a:
+                ui.stat_card("Most common expression", dom or "—", emotion=dom)
+            with b:
+                ui.stat_card("Average confidence", f"{avg:.0%}", f"{len(det)} saved detections", icon="🎯")
             _expression_distribution(stats["expression_counts"])
             _expression_timeline(det)
             _confidence_trend(det)
         else:
-            st.info("No saved detections in this period.", icon=":material/info:")
+            ui.empty_state("No saved detections", "Save a result on Detect Emotion to see expression patterns.",
+                           icon="📷")
     with mood_col:
-        st.markdown("#### Self-reported mood")
-        st.caption("How you said you felt, in your own words.")
+        ui.section("💬 Self-reported mood", "How you said you felt, in your own words.")
         if moods:
+            _checkin_timeline(moods[:6])
             _mood_distribution(moods)
             _mood_trend(moods)
         else:
-            st.info("No mood check-ins in this period.", icon=":material/info:")
+            ui.empty_state("No mood check-ins", "Complete a daily check-in to see your mood over time.", icon="📝")
         _per_day(entries)
 
-    st.write("")
-    st.markdown("#### Your recent activity")
+    ui.section("Your recent activity")
     st.dataframe(_activity_table(entries[:50]), hide_index=True, width="stretch")
     _manage(all_entries)
+
+
+def _checkin_timeline(moods: list[dict]) -> None:
+    items = "".join(
+        f"""<div class="es-tl-item" style="--c:{MOOD_COLOR[e['selfReportedMood']]}"><div class="es-tl-time">
+            {local_time(e):%a %d %b · %H:%M}</div><div class="es-tl-main">{MOODS[e['selfReportedMood']]}
+            {escape(e['selfReportedMood'])}{''.join(f' <span class="es-chip" style="padding:.1rem .5rem;font-size:.72rem">{escape(f)}</span>' for f in e.get('moodFactors', []))}
+            </div></div>""" for e in moods)
+    st.markdown("**Recent check-ins**")
+    st.html(f'<div class="es-glass" style="margin-bottom:1rem"><div class="es-timeline">{items}</div></div>')
 
 
 # ---------------------------------------------------------------------------
@@ -132,7 +157,7 @@ def _mood_distribution(moods: list[dict]) -> None:
     base = alt.Chart(df).encode(y=alt.Y("Mood:N", sort=None, title=None),
                                 x=alt.X("Count:Q", title=None, axis=alt.Axis(tickMinStep=1)), tooltip=["Mood", "Count"])
     st.markdown("**Mood distribution**")
-    st.altair_chart((base.mark_bar(cornerRadiusEnd=4, height=14, color="#4f5bd5")
+    st.altair_chart((base.mark_bar(cornerRadiusEnd=4, height=14, color="#8b7cf6")
                      + base.mark_text(align="left", dx=4).encode(text="Count:Q")).properties(height=190),
                     width="stretch")
 
@@ -141,7 +166,7 @@ def _mood_trend(moods: list[dict]) -> None:
     df = pd.DataFrame({"Time": [local_time(e).replace(tzinfo=None) for e in moods],
                        "Score": [MOOD_SCORE[e["selfReportedMood"]] for e in moods],
                        "Mood": [e["selfReportedMood"] for e in moods]})
-    chart = alt.Chart(df).mark_line(point=alt.OverlayMarkDef(size=60), strokeWidth=2, color="#4f5bd5").encode(
+    chart = alt.Chart(df).mark_line(point=alt.OverlayMarkDef(size=60), strokeWidth=2, color="#8b7cf6").encode(
         x=alt.X("Time:T", title=None, axis=alt.Axis(format="%d %b", labelAngle=0)),
         y=alt.Y("Score:Q", scale=alt.Scale(domain=[1, 5]), title=None,
                 axis=alt.Axis(values=[1, 2, 3, 4, 5], labelExpr="['','Difficult','Low','Okay','Good','Great'][datum.value]")),
@@ -153,7 +178,7 @@ def _mood_trend(moods: list[dict]) -> None:
 def _per_day(entries: list[dict]) -> None:
     days = pd.Series([local_time(e).date() for e in entries]).value_counts().sort_index()
     df = pd.DataFrame({"Day": pd.to_datetime(days.index), "Entries": days.values})
-    chart = alt.Chart(df).mark_bar(cornerRadiusEnd=3, color="#4f5bd5", size=14).encode(
+    chart = alt.Chart(df).mark_bar(cornerRadiusEnd=3, color="#8b7cf6", size=14).encode(
         x=alt.X("Day:T", title=None, axis=alt.Axis(format="%d %b", labelAngle=0)),
         y=alt.Y("Entries:Q", title=None, axis=alt.Axis(tickMinStep=1)),
         tooltip=[alt.Tooltip("Day:T", format="%d %b %Y"), "Entries"]).properties(height=180)
@@ -188,11 +213,11 @@ def _manage(entries: list[dict]) -> None:
         with one:
             target = st.selectbox("Delete one entry", list(labels), format_func=labels.get, key="del_one")
             if st.button("Delete entry", key="del_one_btn", icon=":material/delete:"):
-                _run(lambda: state.history_store().delete(target), "Entry deleted.")
+                _run(lambda: state.delete_entry(target), "Entry deleted.")
         with many:
             sure = st.checkbox("I understand this deletes all my history", key="del_all_ok")
             if st.button("Delete all history", key="del_all_btn", type="primary", disabled=not sure):
-                _run(lambda: state.history_store().clear(), "All history deleted.")
+                _run(state.clear_history, "All history deleted.")
 
 
 def _run(action, message: str) -> None:

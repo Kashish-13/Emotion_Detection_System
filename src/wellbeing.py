@@ -18,50 +18,50 @@ DISTRESS_NOTE = ("If you're experiencing persistent or severe distress, consider
 # ---------------------------------------------------------------------------
 ACTIVITIES = {
     "breathing": {
-        "title": "60-Second Breathing", "icon": ":material/air:", "minutes": 1, "kind": "breathing",
+        "emoji": "🌬️", "title": "60-Second Breathing", "icon": ":material/air:", "minutes": 1, "kind": "breathing",
         "summary": "A slow breathing rhythm with a longer exhale.",
         "steps": ["Inhale through your nose — 4 seconds", "Hold gently — 4 seconds",
                   "Exhale slowly through your mouth — 6 seconds", "Repeat for about a minute"],
     },
     "grounding": {
-        "title": "5-4-3-2-1 Grounding", "icon": ":material/landscape:", "minutes": 3, "kind": "grounding",
+        "emoji": "🧠", "title": "5-4-3-2-1 Grounding", "icon": ":material/landscape:", "minutes": 3, "kind": "grounding",
         "summary": "Bring attention back to your surroundings using your senses.",
         "steps": ["Notice 5 things you can see", "Notice 4 things you can feel or touch",
                   "Notice 3 things you can hear", "Notice 2 things you can smell",
                   "Notice 1 thing you can taste"],
     },
     "mindful_pause": {
-        "title": "Quick Mindful Pause", "icon": ":material/self_improvement:", "minutes": 1, "kind": "timer",
+        "emoji": "🧘", "title": "Quick Mindful Pause", "icon": ":material/self_improvement:", "minutes": 1, "kind": "timer",
         "summary": "One quiet minute of simply noticing.", "seconds": 60,
         "steps": ["Sit comfortably and soften your shoulders", "Notice your breath without changing it",
                   "When your mind wanders, gently return to the breath"],
     },
     "stretch": {
-        "title": "Stretch Break", "icon": ":material/accessibility_new:", "minutes": 2, "kind": "timer",
+        "emoji": "🙆", "title": "Stretch Break", "icon": ":material/accessibility_new:", "minutes": 2, "kind": "timer",
         "summary": "Release tension from sitting with a few gentle stretches.", "seconds": 120,
         "steps": ["Roll your shoulders back five times", "Gently tilt your head side to side",
                   "Stretch your arms overhead and breathe in", "Stand up and reach for your toes, only as far as is comfortable"],
     },
     "journaling": {
-        "title": "Journaling", "icon": ":material/edit_note:", "minutes": 5, "kind": "writing",
+        "emoji": "✍️", "title": "Journaling", "icon": ":material/edit_note:", "minutes": 5, "kind": "writing",
         "summary": "Write freely for a few minutes — no rules, no audience.",
         "steps": ["Pick a prompt or just start writing", "Don't edit; let the thoughts flow",
                   "Re-read it later if you like"],
     },
     "gratitude": {
-        "title": "Gratitude", "icon": ":material/favorite:", "minutes": 2, "kind": "gratitude",
+        "emoji": "💛", "title": "Gratitude", "icon": ":material/favorite:", "minutes": 2, "kind": "gratitude",
         "summary": "Note three things you appreciate today, big or small.",
         "steps": ["Think of three things that went right or that you appreciate",
                   "Be specific — a person, a moment, a small comfort"],
     },
     "focus_reset": {
-        "title": "Focus Reset", "icon": ":material/center_focus_strong:", "minutes": 2, "kind": "timer",
+        "emoji": "🎯", "title": "Focus Reset", "icon": ":material/center_focus_strong:", "minutes": 2, "kind": "timer",
         "summary": "Clear your head before getting back to work.", "seconds": 120,
         "steps": ["Close unneeded tabs and silence notifications", "Write down the single next task",
                   "Take three slow breaths", "Start with just the first two minutes of that task"],
     },
     "walk": {
-        "title": "Take a Short Walk", "icon": ":material/directions_walk:", "minutes": 5, "kind": "timer",
+        "emoji": "🚶", "title": "Take a Short Walk", "icon": ":material/directions_walk:", "minutes": 5, "kind": "timer",
         "summary": "A few minutes of movement and a change of scenery.", "seconds": 300,
         "steps": ["Step away from your screen", "Walk at a comfortable pace, indoors or outside",
                   "Notice what's around you — sounds, light, temperature"],
@@ -69,13 +69,21 @@ ACTIVITIES = {
 }
 
 # ---------------------------------------------------------------------------
-# "Feeling overwhelmed?" quick resets (user-initiated, never triggered by the model)
+# "Feeling overwhelmed?" small resets (user-initiated, never triggered by the model).
+# Each: (emoji, label, activity id or None, short hint)
 # ---------------------------------------------------------------------------
-QUICK_RESETS = [("one_minute_reset", "1-minute breathing"), ("grounding", "Grounding exercise"),
-                ("journaling", "Write it out"), ("stretch", "Take a movement break")]
+OVERWHELMED_RESETS = [
+    ("🌬️", "Slow breathing", "one_minute_reset", "One minute, longer exhale"),
+    ("🪟", "Step away from the screen", "walk", "Even two minutes helps"),
+    ("💧", "Drink some water", None, "A small, easy reset"),
+    ("🚶", "Take a short walk", "walk", "Movement and fresh air"),
+    ("✍️", "Write down what's bothering you", "journaling", "Get it out of your head"),
+    ("🤝", "Talk to someone you trust", None, "You don't have to sort it out alone"),
+]
+QUICK_RESETS = [(a, label) for _, label, a, _ in OVERWHELMED_RESETS if a]
 
 ACTIVITIES["one_minute_reset"] = {
-    "title": "1-Minute Reset", "icon": ":material/spa:", "minutes": 1, "kind": "breathing",
+    "emoji": "🌬️", "title": "1-Minute Reset", "icon": ":material/spa:", "minutes": 1, "kind": "breathing",
     "summary": "Four simple steps to slow things down.",
     "steps": ["Relax your shoulders.", "Breathe in slowly.", "Exhale longer than you inhale.", "Repeat."],
 }
@@ -114,6 +122,22 @@ EMOTION_SUGGESTIONS = {
                           ("Refresh your environment — open a window, tidy your space", None),
                           ("A quick focus reset", "focus_reset")]},
 }
+
+# How a detected expression is described. Always the *expression*, never the person's feelings.
+EXPRESSION_TEXT = {
+    "Happy": "a positive, smiling facial expression",
+    "Sad": "a downturned facial expression often associated with sadness",
+    "Angry": "a tense facial expression often associated with anger",
+    "Fear": "a wide-eyed facial expression often associated with fear",
+    "Surprise": "a raised-brow facial expression often associated with surprise",
+    "Disgust": "a facial expression often associated with disgust",
+    "Neutral": "a calm, neutral facial expression",
+}
+
+
+def describe_expression(emotion: str) -> str:
+    return f"Facial expression appears consistent with {EXPRESSION_TEXT.get(emotion, 'a neutral expression')}."
+
 
 SELF_CHECK_PROMPT = "This expression may be a good opportunity for a quick self-check."
 

@@ -10,17 +10,17 @@ FLOW = ["Image / webcam", "Face detection", "Preprocessing", "CNN", "Emotion pro
 
 
 def render() -> None:
-    ui.page_header(f"About {config.APP_NAME}", config.APP_TAGLINE, eyebrow="About")
+    ui.page_header("About", config.APP_TAGLINE, eyebrow="Learn · About", accent=config.APP_NAME)
 
-    st.markdown("#### What is EmotionSense?")
+    ui.section("What is EmotionSense?")
     st.markdown(
         "EmotionSense combines a **facial-expression recognition model** with a small set of **reflection and "
         "wellbeing tools**. The model looks at a face and estimates which of seven expressions it shows. The rest "
         "of the app turns that into an invitation to check in with yourself — in your own words.")
 
-    st.markdown("#### How it works")
-    flow = '<span class="arrow">→</span>'.join(f'<span class="step">{s}</span>' for s in FLOW)
-    st.html(f'<div class="es-flow">{flow}</div>')
+    ui.section("How it works")
+    flow = '<span class="arrow">→</span>'.join(f'<span class="es-chip">{s}</span>' for s in FLOW)
+    st.html(f'<div class="es-chips" style="margin-bottom:.8rem">{flow}</div>')
     st.markdown(
         "1. **Face detection**: OpenCV's Haar cascade finds each face.\n"
         "2. **Preprocessing**: crop → grayscale → 48×48 → scale to [0, 1] — identical to training.\n"
@@ -30,14 +30,16 @@ def render() -> None:
         "of where the model looked.\n"
         "5. **Reflection (optional)**: check-ins, journaling and short wellbeing activities.")
 
-    st.markdown("#### Technology")
-    st.markdown("Python · TensorFlow / Keras · OpenCV · Streamlit · Altair · Firebase Authentication & Firestore "
-                "· FER-2013")
+    ui.section("Technology")
+    tech = ["Python", "TensorFlow / Keras", "OpenCV", "Streamlit", "Altair", "Firebase Auth", "Cloud Firestore",
+            "FER-2013"]
+    st.html('<div class="es-chips">' + "".join(f'<span class="es-chip">{t}</span>' for t in tech) + "</div>")
+    st.write("")
 
     lim, priv = st.columns(2, gap="large")
     with lim:
-        with st.container(border=True):
-            st.markdown("##### Limitations")
+        with st.container(key="glass_limits"):
+            st.markdown("##### ⚠️ Limitations")
             st.markdown(
                 "- **A facial expression is not an emotion.** People smile when sad and look neutral when happy.\n"
                 "- Lighting, head pose, glasses and image quality change predictions.\n"
@@ -47,8 +49,8 @@ def render() -> None:
                 "- **Not a medical or diagnostic tool.** It cannot detect stress, anxiety, depression or any "
                 "mental-health condition.")
     with priv:
-        with st.container(border=True):
-            st.markdown("##### Privacy")
+        with st.container(key="glass_privacy"):
+            st.markdown("##### 🔒 Privacy")
             st.markdown(
                 "- **Images and webcam frames are never stored.** They are analysed in memory and discarded.\n"
                 "- When you choose **Save**, only the detected expression, confidence and top-3 predictions are "

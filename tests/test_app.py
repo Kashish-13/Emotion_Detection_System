@@ -46,8 +46,17 @@ app.main()
 
 @pytest.fixture(autouse=True)
 def no_real_firebase(monkeypatch):
+    """Never talk to a real Firebase project, even if a local .streamlit/secrets.toml exists."""
+    from src.ui import state
+
     monkeypatch.delenv(config.FIREBASE_API_KEY_ENV, raising=False)
     monkeypatch.delenv(config.FIREBASE_PROJECT_ID_ENV, raising=False)
+    monkeypatch.setattr(state, "load_firebase_config", lambda: None)
+    real_client = state.get_firebase_client  # FAKE_FIREBASE replaces it; restored after each test
+    monkeypatch.setattr(state, "get_firebase_client", real_client)
+    real_client.clear()
+    yield
+    real_client.clear()
 
 
 def run_page(view: str, seed: bool = True) -> AppTest:

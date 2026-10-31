@@ -119,6 +119,9 @@ def test_delete_rejects_ids_that_could_escape_the_users_path(bad_id):
 
 
 def test_config_from_environment(monkeypatch):
+    import streamlit as st
+
+    monkeypatch.setattr(st, "secrets", {})  # ignore any local .streamlit/secrets.toml
     monkeypatch.delenv(config.FIREBASE_API_KEY_ENV, raising=False)
     monkeypatch.delenv(config.FIREBASE_PROJECT_ID_ENV, raising=False)
     assert load_firebase_config() is None

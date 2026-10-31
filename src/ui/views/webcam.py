@@ -1,4 +1,4 @@
-"""Live Webcam: OpenCV capture on the machine running Streamlit, with live stats."""
+"""Live Webcam ("EmotionSense Vision"): OpenCV capture on the machine running Streamlit, with live stats."""
 import os
 import time
 
@@ -21,23 +21,34 @@ def _set_running(running: bool) -> None:
     st.session_state.webcam_running = running
 
 
+def _status(label: str, on: bool) -> str:
+    return f'<span class="es-live{" on" if on else ""}"><i></i>{label}</span>'
+
+
 def render() -> None:
-    ui.page_header("Live webcam", "Real-time face detection and facial-expression prediction.", eyebrow="Detection")
+    st.session_state.setdefault("webcam_running", False)
+    running = st.session_state.webcam_running
+    head, badge = st.columns([4, 1], vertical_alignment="bottom")
+    with head:
+        ui.page_header("EmotionSense", "Real-time face detection and facial-expression analysis from your webcam.",
+                       eyebrow="Analyze · Live", accent="Vision")
+    with badge:
+        st.html(f'<div style="text-align:right;margin-bottom:1.6rem">'
+                f'{_status("LIVE", True) if running else _status("CAMERA OFF", False)}</div>')
     predictor, error = get_predictor()
     if error:
         model_missing(error)
         return
-    st.session_state.setdefault("webcam_running", False)
-    running = st.session_state.webcam_running
 
-    cam_col, stat_col = st.columns([1.7, 1], gap="large")
+    cam_col, stat_col = st.columns([1.65, 1], gap="large")
     with cam_col:
+        with st.container(key="vision_live" if running else "vision_frame"):
+            frame_slot = st.empty()
         if running:
             st.button("Pause camera", icon=":material/pause:", on_click=_set_running, args=(False,), key="cam_pause")
         else:
             st.button("Start camera", type="primary", icon=":material/videocam:", on_click=_set_running,
                       args=(True,), key="cam_start")
-        frame_slot = st.empty()
     with stat_col:
         stats_slot = st.empty()
 
@@ -50,10 +61,11 @@ def render() -> None:
             with stat_col:
                 _save_last(last["faces"])
         else:
-            frame_slot.html("""<div class="es-card" style="text-align:center;padding:4rem 1rem">
-                <div style="font-weight:700;font-size:1.1rem">Camera is off</div>
-                <div class="es-muted" style="margin-top:.3rem">Press <b>Start camera</b>. Frames are processed in
-                memory and never recorded.</div></div>""")
+            frame_slot.html("""<div class="es-vision-off"><div>
+                <div style="font-size:2.6rem">📷</div>
+                <div style="font-weight:700;font-size:1.15rem;margin-top:.4rem">Camera is off</div>
+                <div class="es-muted" style="margin-top:.3rem;max-width:22rem">Press <b>Start camera</b>. Frames are
+                processed in memory and never recorded.</div></div></div>""")
             with stats_slot.container():
                 _stats([], None)
         st.caption(f"The webcam is read by OpenCV on the computer running this app, so live mode works when the "
@@ -91,6 +103,7 @@ def render() -> None:
                         {"emotion": f.emotion, "confidence": f.confidence, "source": "webcam"} for f in faces)
                     st.session_state.faces_detected += len(faces)
                     del st.session_state.session_predictions[:-config.SESSION_HISTORY_SIZE]
+                    state.remember_face(_primary(faces), "webcam")
                     last_log = time.time()
             rgb = annotate_image(frame, faces)[:, :, ::-1]
             frame_slot.image(rgb, channels="RGB", width="stretch")
@@ -111,31 +124,30 @@ def _primary(faces):
 def _stats(faces, fps) -> None:
     c1, c2 = st.columns(2)
     with c1:
-        ui.stat_card("Detected faces", str(len(faces)))
+        ui.stat_card("Faces detected", str(len(faces)), icon="👥")
     with c2:
-        ui.stat_card("FPS", f"{fps:.1f}" if fps else "—")
+        ui.stat_card("FPS", f"{fps:.1f}" if fps else "—", icon="⚡")
     if not faces:
         if fps is not None:
             st.info("No face detected. Try adjusting your position or lighting.", icon=":material/face:")
+        else:
+            ui.empty_state("Waiting for a face", "Live results appear here once the camera is running.", icon="🎯")
         return
     main = _primary(faces)
-    c3, c4 = st.columns(2)
-    with c3:
-        ui.stat_card("Dominant expression", main.emotion, "Largest face", emotion=main.emotion)
-    with c4:
-        ui.stat_card("Confidence", f"{main.confidence:.0%}", main.level)
+    ui.emotion_card(main.emotion, main.confidence, "Current detected emotion" + (" · largest face" if len(faces) > 1 else ""))
     if main.level == "Low":
         st.caption(":material/info: Low confidence — lighting, pose or angle may be affecting the result.")
+    ui.emotion_bars(dict(sorted(main.probabilities.items(), key=lambda kv: -kv[1])[:4]), "Emotion distribution · top 4")
     if len(faces) > 1:
-        rows = "".join(f"<div style='margin:.25rem 0'>Face {i} &nbsp;{ui.emotion_pill(f.emotion)} "
-                       f"&nbsp;{f.confidence:.0%}</div>" for i, f in enumerate(faces, 1))
-        st.html(f'<div class="es-card"><div class="es-stat-label">All faces</div>{rows}</div>')
+        chips = "".join(f'<span class="es-chip">Face {i} · {ui.emoji(f.emotion)} {f.emotion} {f.confidence:.0%}</span>'
+                        for i, f in enumerate(faces, 1))
+        st.html(f'<div class="es-chips" style="margin-top:.7rem">{chips}</div>')
 
 
 def _save_last(faces) -> None:
     if not faces:
         return
-    with st.container(border=True):
+    with st.container(key="glass_cam_save"):
         st.markdown("**Save this moment**")
         options = [f"Face {i} · {f.emotion} {f.confidence:.0%}" for i, f in enumerate(faces, 1)]
         pick = st.selectbox("Face", options, key="cam_save_face", label_visibility="collapsed") if len(faces) > 1 \
@@ -154,21 +166,20 @@ def _save_last(faces) -> None:
 
 def _session_summary() -> None:
     summary = summarize_session(st.session_state.session_predictions)
-    st.markdown("#### This session")
-    st.caption("Live predictions from this browser session (not saved). They describe detected expressions, "
-               "not how anyone feels.")
+    ui.section("This session", "Live predictions from this browser session (not saved). They describe detected "
+               "expressions, not how anyone feels.")
     if not summary["predictions"]:
         st.caption("No live predictions yet.")
         return
     c = st.columns(4)
     with c[0]:
-        ui.stat_card("Predictions logged", str(summary["predictions"]), "At most one per second")
+        ui.stat_card("Predictions logged", str(summary["predictions"]), "At most one per second", icon="🧾")
     with c[1]:
-        ui.stat_card("Faces detected", str(st.session_state.faces_detected))
+        ui.stat_card("Faces detected", str(st.session_state.faces_detected), icon="👥")
     with c[2]:
         ui.stat_card("Most frequent", summary["dominant"], emotion=summary["dominant"])
     with c[3]:
-        ui.stat_card("Average confidence", f"{summary['average_confidence']:.0%}")
+        ui.stat_card("Average confidence", f"{summary['average_confidence']:.0%}", icon="🎯")
     df = pd.DataFrame({"Expression": list(summary["counts"]), "Count": list(summary["counts"].values())})
     chart = alt.Chart(df).mark_bar(cornerRadiusEnd=4).encode(
         x=alt.X("Expression:N", sort=config.EMOTIONS, title=None, axis=alt.Axis(labelAngle=0)),

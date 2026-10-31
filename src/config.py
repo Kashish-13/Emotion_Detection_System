@@ -93,12 +93,16 @@ APP_NAME = "EmotionSense"
 APP_TAGLINE = "Understand your expression. Reflect. Take a mindful step."
 ASSETS_DIR = ROOT_DIR / "assets"
 
-# Accent colour per expression. Validated as an ordered categorical palette (light and
-# dark) with the data-viz palette validator; charts always label emotions directly,
-# so colour is never the only cue.
+# Accent colour per expression (warm red-orange Angry, green Disgust, deep purple Fear,
+# gold Happy, blue Sad, violet Surprise, grey-blue Neutral). Fear, Surprise, Sad and Neutral
+# are hard to tell apart with colour-vision deficiency, so the UI never relies on colour
+# alone: every emotion is always shown with its emoji and name.
 EMOTION_COLORS = {
-    "Angry": "#e34948", "Disgust": "#008300", "Fear": "#6250d6", "Happy": "#eda100",
-    "Sad": "#2a78d6", "Surprise": "#eb6834", "Neutral": "#1baf7a",
+    "Angry": "#ea5a3a", "Disgust": "#2f9e5c", "Fear": "#8156e8", "Happy": "#e8b023",
+    "Sad": "#2f7fe0", "Surprise": "#c95bd0", "Neutral": "#8394b0",
+}
+EMOTION_EMOJI = {
+    "Angry": "😠", "Disgust": "🤢", "Fear": "😨", "Happy": "😊", "Sad": "😢", "Surprise": "😮", "Neutral": "😐",
 }
 
 # Firebase (Authentication + Firestore). Values come from .streamlit/secrets.toml

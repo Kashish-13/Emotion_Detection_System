@@ -39,12 +39,19 @@ def build_pages() -> dict:
 def sidebar() -> None:
     with st.sidebar:
         name = state.display_name()
-        subtitle = state.email() or "Guest — not saved after this tab closes"
-        st.html(f"""<div class="es-card" style="padding:.75rem .85rem"><div class="es-user">
+        if state.is_guest():
+            subtitle, status = "Not signed in", '<span class="es-status guest"><i></i>Guest · this session only</span>'
+        else:
+            subtitle, status = state.email(), '<span class="es-status cloud"><i></i>Signed in · history synced</span>'
+        st.html(f"""<div class="es-glass" style="padding:.85rem .9rem"><div class="es-profile">
             <div class="es-avatar">{escape(name[:1].upper())}</div>
             <div style="min-width:0"><div style="font-weight:700">{escape(name)}</div>
-            <div class="es-small es-muted" style="overflow:hidden;text-overflow:ellipsis">{escape(subtitle)}</div>
-            </div></div></div>""")
+            <div class="es-small es-muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            {escape(subtitle)}</div></div></div>{status}</div>""")
+        if st.session_state.offline_history:
+            st.caption(f":material/cloud_off: {len(st.session_state.offline_history)} entr"
+                       f"{'y' if len(st.session_state.offline_history) == 1 else 'ies'} saved for this session "
+                       "only — cloud sync was unavailable.")
         if st.button("Log out", icon=":material/logout:", width="stretch", key="logout"):
             state.logout()
             st.rerun()
@@ -63,11 +70,14 @@ def main() -> None:
     pages = build_pages()
     nav = st.navigation({
         "Home": [pages["dashboard"]],
-        "Detect": [pages["detect"], pages["webcam"]],
+        "Analyze": [pages["detect"], pages["webcam"]],
         "Reflect": [pages["checkin"], pages["wellbeing"], pages["history"]],
         "Learn": [pages["insights"], pages["about"]],
     })
     sidebar()
+    start = st.session_state.pop("start_page", None)  # set by the landing page's call-to-action buttons
+    if start in pages:
+        st.switch_page(pages[start])
     nav.run()
 
 

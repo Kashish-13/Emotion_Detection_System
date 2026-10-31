@@ -1,48 +1,71 @@
-"""Reusable UI pieces. Every user-provided string is HTML-escaped before rendering."""
+"""Reusable UI pieces. Every user-provided string is HTML-escaped before rendering.
+
+Emotion colour is never used on its own: each emotion is shown with its emoji and name.
+"""
 from html import escape
 
-import altair as alt
-import pandas as pd
 import streamlit as st
 
 from src import config
 from src.ui import state
-from src.wellbeing import ACTIVITIES, DISTRESS_NOTE, FEELING_ICONS, FEELINGS_AFTER, JOURNAL_PROMPTS
+from src.wellbeing import (ACTIVITIES, DISTRESS_NOTE, FEELING_ICONS, FEELINGS_AFTER, JOURNAL_PROMPTS,
+                           describe_expression)
 
 
-def color(emotion: str) -> str:
-    return config.EMOTION_COLORS.get(emotion, "#8a8f9e")
+def color(emotion: str | None) -> str:
+    return config.EMOTION_COLORS.get(emotion, "#8b7cf6")
+
+
+def emoji(emotion: str | None) -> str:
+    return config.EMOTION_EMOJI.get(emotion, "🙂")
+
+
+def pct(p: float) -> str:
+    return "<1%" if p < 0.01 else f"{p:.0%}"
 
 
 # ---------------------------------------------------------------------------
 # Basic blocks
 # ---------------------------------------------------------------------------
-def page_header(title: str, subtitle: str = "", eyebrow: str = "") -> None:
-    st.html(f"""<div style="margin-bottom:1.1rem">
+def page_header(title: str, subtitle: str = "", eyebrow: str = "", accent: str = "") -> None:
+    """Page title; ``accent`` is an optional trailing phrase in the brand gradient."""
+    accent_html = f' <span class="es-grad-text">{escape(accent)}</span>' if accent else ""
+    st.html(f"""<div class="es-head">
         {f'<div class="es-eyebrow">{escape(eyebrow)}</div>' if eyebrow else ''}
-        <div class="es-title">{escape(title)}</div>
+        <div class="es-title">{escape(title)}{accent_html}</div>
         {f'<p class="es-subtitle">{escape(subtitle)}</p>' if subtitle else ''}</div>""")
 
 
-def stat_card(label: str, value: str, hint: str = "", emotion: str | None = None) -> None:
-    dot = f'<span class="es-dot" style="--c:{color(emotion)}"></span>' if emotion else ""
-    st.html(f"""<div class="es-card"><div class="es-stat-label">{escape(label)}</div>
-        <div class="es-stat-value">{dot}{escape(value)}</div>
-        <div class="es-stat-hint">{escape(hint) if hint else "&nbsp;"}</div></div>""")
+def section(title: str, text: str = "") -> None:
+    st.html(f'<div class="es-section"><h3>{escape(title)}</h3>{f"<p>{escape(text)}</p>" if text else ""}</div>')
+
+
+def stat_card(label: str, value: str, hint: str = "", emotion: str | None = None, icon: str = "") -> None:
+    icon = emoji(emotion) if emotion else icon
+    icon_html = f'<div class="es-stat-icon" style="--c:{color(emotion)}">{icon}</div>' if icon else ""
+    st.html(f"""<div class="es-glass lift" style="padding:1rem 1.1rem"><div class="es-stat">{icon_html}
+        <div style="min-width:0"><div class="es-stat-label">{escape(label)}</div>
+        <div class="es-stat-value">{escape(value)}</div>
+        <div class="es-stat-hint">{escape(hint) if hint else "&nbsp;"}</div></div></div></div>""")
 
 
 def emotion_pill(emotion: str) -> str:
-    return f'<span class="es-pill" style="--c:{color(emotion)}"><span class="es-dot" style="--c:{color(emotion)};margin:0"></span>{escape(emotion)}</span>'
+    return f'<span class="es-pill" style="--c:{color(emotion)}">{emoji(emotion)} {escape(emotion)}</span>'
 
 
-def empty_state(title: str, text: str) -> None:
-    st.html(f"""<div class="es-card" style="text-align:center;padding:2.2rem 1rem">
-        <div style="font-size:1.25rem;font-weight:700">{escape(title)}</div>
-        <div class="es-muted" style="margin-top:.35rem">{escape(text)}</div></div>""")
+def empty_state(title: str, text: str, icon: str = "✨") -> None:
+    st.html(f"""<div class="es-glass es-empty"><div class="icon">{icon}</div>
+        <div class="t">{escape(title)}</div><div class="d">{escape(text)}</div></div>""")
 
 
 def note(text: str) -> None:
-    st.html(f'<div class="es-muted es-small" style="margin-top:.6rem">{escape(text)}</div>')
+    st.html(f'<div class="es-muted es-small" style="margin-top:1rem">{escape(text)}</div>')
+
+
+def soft_notice(text: str) -> None:
+    """A calm notice for recoverable problems, instead of a red error block."""
+    st.html(f'<div class="es-glass es-small" style="padding:.75rem 1rem;border-color:rgba(232,176,35,.35)">'
+            f'☁️ {escape(text)}</div>')
 
 
 # ---------------------------------------------------------------------------
@@ -51,12 +74,38 @@ def note(text: str) -> None:
 LEVEL_TEXT = {"High": "High confidence", "Moderate": "Moderate confidence", "Low": "Low confidence"}
 
 
-def result_card(face, title: str = "Detected expression") -> None:
-    st.html(f"""<div class="es-card es-result" style="--c:{color(face.emotion)}">
+def confidence_level(confidence: float) -> str:
+    if confidence >= config.HIGH_CONFIDENCE:
+        return "High"
+    return "Moderate" if confidence >= config.MODERATE_CONFIDENCE else "Low"
+
+
+def level_badge(level: str) -> str:
+    return f'<span class="es-badge {level.lower()}">{LEVEL_TEXT.get(level, level)}</span>'
+
+
+def emotion_card(emotion: str, confidence: float, title: str = "Detected expression", text: str = "",
+                 meta: str = "") -> None:
+    """The dominant result card: emoji orb, emotion name, confidence ring and badge."""
+    level = confidence_level(confidence)
+    text = text or describe_expression(emotion)
+    meta_html = f'<div class="es-small es-muted" style="margin-top:.5rem">{escape(meta)}</div>' if meta else ""
+    st.html(f"""<div class="es-glass es-emotion-card" style="--c:{color(emotion)}">
         <div class="es-eyebrow">{escape(title)}</div>
-        <div class="es-emotion">{escape(face.emotion.upper())}</div>
-        <div class="es-confidence">{face.confidence:.0%} confidence &nbsp;
-          <span class="es-pill">{LEVEL_TEXT[face.level]}</span></div></div>""")
+        <div class="es-emotion-main">
+          <div class="es-emoji-orb" aria-hidden="true">{emoji(emotion)}</div>
+          <div style="flex:1;min-width:10rem">
+            <div class="es-emotion-name">{escape(emotion.upper())}</div>
+            <div class="es-emotion-conf">{confidence:.0%} confidence {level_badge(level)}</div>
+          </div>
+          <div class="es-ring" style="--p:{confidence * 100:.1f}" role="img"
+               aria-label="Confidence {confidence:.0%}"><span>{confidence:.0%}</span></div>
+        </div>
+        <p class="es-emotion-text">{escape(text)}</p>{meta_html}</div>""")
+
+
+def result_card(face, title: str = "Detected expression") -> None:
+    emotion_card(face.emotion, face.confidence, title)
 
 
 def low_confidence_warning() -> None:
@@ -64,27 +113,27 @@ def low_confidence_warning() -> None:
                "Lighting, pose, face angle, or image quality can affect the result.", icon=":material/info:")
 
 
-def top_bars(pairs: list[tuple[str, float]]) -> None:
+def emotion_bars(probabilities: dict, title: str = "") -> None:
+    """Emotions as horizontal bars (highest first), each labelled with emoji, name and percentage."""
+    items = sorted(probabilities.items(), key=lambda kv: -kv[1])
     rows = "".join(
-        f"""<div class="es-bar-row"><div>{escape(e)}</div>
-            <div class="es-bar-track"><div class="es-bar-fill" style="--c:{color(e)};width:{p * 100:.1f}%"></div></div>
-            <div class="es-bar-value">{'<1%' if p < 0.01 else f'{p:.0%}'}</div></div>""" for e, p in pairs)
-    st.html(f'<div class="es-card"><div class="es-stat-label" style="margin-bottom:.3rem">Top predictions</div>{rows}</div>')
+        f"""<div class="es-bar-row{' top' if i == 0 else ''}" style="--c:{color(e)}">
+            <div class="es-bar-name"><span class="e" aria-hidden="true">{emoji(e)}</span>{escape(e)}</div>
+            <div class="es-bar-track"><div class="es-bar-fill" style="width:{max(p * 100, 0.8):.1f}%"></div></div>
+            <div class="es-bar-value">{pct(p)}</div></div>""" for i, (e, p) in enumerate(items))
+    head = f'<div class="es-stat-label" style="margin-bottom:.4rem">{escape(title)}</div>' if title else ""
+    st.html(f'<div class="es-glass">{head}{rows}</div>')
 
 
-def probability_chart(probabilities: dict, height: int = 240) -> None:
-    df = pd.DataFrame({"Emotion": list(probabilities), "Probability": list(probabilities.values())})
-    df["Label"] = df["Probability"].map(lambda p: "<1%" if p < 0.01 else f"{p:.0%}")
-    base = alt.Chart(df).encode(
-        y=alt.Y("Emotion:N", sort="-x", title=None),
-        x=alt.X("Probability:Q", scale=alt.Scale(domain=[0, 1]), axis=alt.Axis(format="%", grid=False), title=None),
-        tooltip=["Emotion", alt.Tooltip("Probability:Q", format=".1%")],
-    )
-    bars = base.mark_bar(cornerRadiusEnd=4, height=14).encode(
-        color=alt.Color("Emotion:N", scale=alt.Scale(domain=list(config.EMOTION_COLORS),
-                                                      range=list(config.EMOTION_COLORS.values())), legend=None))
-    text = base.mark_text(align="left", dx=4, fontSize=12).encode(text="Label:N")
-    st.altair_chart((bars + text).properties(height=height), width="stretch")
+def rank_cards(pairs: list[tuple[str, float]]) -> None:
+    """Top predictions as ranked cards."""
+    cards = "".join(
+        f"""<div class="es-glass lift es-rank{' first' if i == 1 else ''}" style="--c:{color(e)}">
+            <div class="n">#{i}</div><div class="e" aria-hidden="true">{emoji(e)}</div>
+            <div class="name">{escape(e)}</div><div class="pct">{pct(p)}</div>
+            <div class="es-bar-track" style="margin-top:.45rem"><div class="es-bar-fill"
+                 style="width:{max(p * 100, 0.8):.1f}%"></div></div></div>""" for i, (e, p) in enumerate(pairs, 1))
+    st.html(f'<div class="es-rank-grid">{cards}</div>')
 
 
 # ---------------------------------------------------------------------------
@@ -114,10 +163,14 @@ def open_activity(activity_id: str) -> None:
     state.go("wellbeing")
 
 
+COUNTDOWN = [4, 3, 2, 1, 4, 3, 2, 1, 6, 5, 4, 3, 2, 1]  # inhale 4s, hold 4s, exhale 6s
+
+
 def breathing_orb() -> None:
-    st.html("""<div class="es-orb-wrap"><div class="es-orb"></div>
-        <div class="es-phase"><span class="in">Inhale · 4s</span><span class="hold">Hold · 4s</span>
-        <span class="out">Exhale · 6s</span></div></div>""")
+    ticks = "".join(f'<span style="animation-delay:{i}s">{n}…</span>' for i, n in enumerate(COUNTDOWN))
+    st.html(f"""<div class="es-orb-wrap"><div class="es-orb-ring"><div class="es-orb"></div></div>
+        <div class="es-phase"><span class="in">INHALE</span><span class="hold">HOLD</span>
+        <span class="out">EXHALE</span></div><div class="es-count">{ticks}</div></div>""")
 
 
 def timer_bar(seconds: int, label: str) -> None:
@@ -128,9 +181,9 @@ def timer_bar(seconds: int, label: str) -> None:
 def render_activity(activity_id: str) -> None:
     """Interactive panel for one wellbeing activity, followed by a 'how do you feel' reflection."""
     act = ACTIVITIES[activity_id]
-    with st.container(border=True):
+    with st.container(key="activity_panel"):
         head, close = st.columns([6, 1], vertical_alignment="center")
-        head.markdown(f"### {act['title']}")
+        head.markdown(f"### {act['emoji']} {act['title']}")
         head.caption(f"{act['summary']} · about {act['minutes']} min")
         if close.button("Close", key=f"close_{activity_id}", icon=":material/close:"):
             st.session_state.activity = None
