@@ -31,3 +31,6 @@ models/*
 Thumbs.db
 .vscode/
 .idea/
+
+# Vercel web app + inference API build output
+/dist/

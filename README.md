@@ -321,11 +321,27 @@ users/{uid}/checkins/{checkinId}
 - Suggestions are general wellbeing ideas, labelled as *not medical advice*.
 - The Wellbeing page always shows a note about reaching out to a qualified professional or someone you trust.
 
+## Web version (Next.js on Vercel)
+
+A second front end, separate from the Streamlit app (which is unchanged):
+
+| Part | Folder | Hosting | What it does |
+|---|---|---|---|
+| Web app | [`web/`](web/README.md) | Vercel | Next.js + TypeScript: landing, login/sign-up, dashboard, detect, history, about |
+| Inference API | [`inference_api/`](inference_api/README.md) | Hugging Face Spaces (Docker) | FastAPI around the **unchanged** `src/` pipeline and model; prediction + Grad-CAM |
+
+- **Why two hosts:** TensorFlow is over 1 GB installed, far beyond Vercel's ~250 MB Python function limit, so the model runs in a Docker container instead of a Vercel function.
+- **Same predictions:** the API calls `EmotionPredictor` and `GradCAM` directly; a test checks its output matches the Streamlit pipeline exactly.
+- **Shared history:** same Firebase project and `users/{uid}/checkins` format, so predictions saved in either app appear in both. The existing `firestore.rules` apply unchanged.
+- **Security:** the API checks the user's Firebase ID token, allows only your site's origin, and validates type, size and dimensions before decoding. No private credentials are used anywhere.
+
 ## Project structure
 
 ```
 Emotion_Detection_System/
 ├── app.py                      # Streamlit entry point: theme, sign-in gate, navigation
+├── web/                        # Next.js web app for Vercel (see web/README.md)
+├── inference_api/              # FastAPI + Dockerfile for Hugging Face Spaces (see inference_api/README.md)
 ├── src/
 │   ├── config.py               # paths, labels, hyperparameters, thresholds, colours, Firebase settings
 │   ├── data_loader.py          # FER-2013 loading (+ --download), .npz cache
