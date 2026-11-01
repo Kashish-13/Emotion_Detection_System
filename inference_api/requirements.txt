@@ -1,0 +1,13 @@
+# EmotionSense inference API (Docker / Hugging Face Spaces). Same ML stack as the Streamlit app.
+tensorflow>=2.21,<2.22          # loads models/emotion_model.keras (Keras 3)
+keras>=3.15,<4
+numpy>=2.0
+opencv-python-headless>=4.10,<5  # Haar cascade face detector (removed in OpenCV 5)
+scikit-learn>=1.5                # imported by src/preprocessing.py
+pillow>=11.0                     # image header checks before decoding
+
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9          # multipart file uploads
+google-auth>=2.30                # Firebase ID-token verification (public certificates, no secrets)
+requests>=2.31

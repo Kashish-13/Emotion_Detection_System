@@ -321,11 +321,29 @@ users/{uid}/checkins/{checkinId}
 - Suggestions are general wellbeing ideas, labelled as *not medical advice*.
 - The Wellbeing page always shows a note about reaching out to a qualified professional or someone you trust.
 
+## Web version (Next.js on Vercel)
+
+A second front end in [`web/`](web/README.md), separate from the Streamlit app (which is unchanged): Next.js +
+TypeScript with landing, login/sign-up, dashboard, detect (upload and webcam), history and about pages.
+
+- **Inference runs in the browser.** The same trained weights, converted to TensorFlow.js without retraining, run with
+  OpenCV.js for face detection and preprocessing. No Python server, Docker image or paid service is needed, and images
+  never leave the user's device. The whole app deploys to Vercel as static pages.
+- **Same predictions as Python.** The browser pipeline reproduces `src/` step by step. On 44 real faces it gives
+  identical model inputs, probabilities within 3.3 × 10⁻⁷, the same predicted emotion every time, and Grad-CAM
+  heatmaps within 3 × 10⁻⁶.
+- **Shared history:** same Firebase project and `users/{uid}/checkins` format, so predictions saved in either app
+  appear in both. The existing `firestore.rules` apply unchanged.
+- [`inference_api/`](inference_api/README.md) is an optional FastAPI + Docker server version of the same pipeline.
+  The web app does not use it.
+
 ## Project structure
 
 ```
 Emotion_Detection_System/
 ├── app.py                      # Streamlit entry point: theme, sign-in gate, navigation
+├── web/                        # Next.js web app for Vercel (see web/README.md)
+├── inference_api/              # optional FastAPI + Docker server for the same pipeline (not used by web/)
 ├── src/
 │   ├── config.py               # paths, labels, hyperparameters, thresholds, colours, Firebase settings
 │   ├── data_loader.py          # FER-2013 loading (+ --download), .npz cache

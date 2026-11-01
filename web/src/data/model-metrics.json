@@ -1,0 +1,29 @@
+{
+  "_source": "Generated from results/metrics.json and results/training_summary.json. Do not edit by hand.",
+  "leakageAware": {
+    "n": 3275,
+    "accuracy": 0.5957,
+    "macroF1": 0.5448,
+    "weightedF1": 0.5953
+  },
+  "official": {
+    "n": 3589,
+    "accuracy": 0.6094,
+    "macroF1": 0.5702,
+    "weightedF1": 0.6076
+  },
+  "top3AccuracyOfficial": 0.8955,
+  "baselineAlwaysHappyAccuracy": 0.2449,
+  "parameters": 713439,
+  "modelSizeMb": 8.7,
+  "trainImages": 28697,
+  "perClassF1LeakageAware": {
+    "Angry": 0.4825,
+    "Disgust": 0.3537,
+    "Fear": 0.3576,
+    "Happy": 0.8334,
+    "Sad": 0.4876,
+    "Surprise": 0.6915,
+    "Neutral": 0.6072
+  }
+}
