@@ -9,8 +9,15 @@ import { displayName, logOut, useAuth } from "@/lib/auth";
 const NAV = [
   { section: "Home", items: [{ href: "/dashboard", label: "Dashboard", icon: "▦" }] },
   { section: "Analyze", items: [{ href: "/detect", label: "Detect Emotion", icon: "◉" }] },
-  { section: "Reflect", items: [{ href: "/history", label: "History", icon: "↺" }] },
-  { section: "Learn", items: [{ href: "/about", label: "About the model", icon: "ⓘ" }] },
+  { section: "Reflect", items: [
+    { href: "/checkin", label: "Daily Check-In", icon: "✎" },
+    { href: "/wellbeing", label: "Wellbeing", icon: "❀" },
+    { href: "/history", label: "History & Insights", icon: "↺" },
+  ] },
+  { section: "Learn", items: [
+    { href: "/model", label: "Model Insights", icon: "◈" },
+    { href: "/about", label: "About", icon: "ⓘ" },
+  ] },
 ];
 
 export default function AppShell({ children }: { children: ReactNode }) {

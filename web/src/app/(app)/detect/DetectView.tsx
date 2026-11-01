@@ -4,12 +4,22 @@
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { EmotionBars, RankCards, ResultCard } from "@/components/Emotion";
 import WebcamPanel from "@/components/WebcamPanel";
+import { SavedMessage, SuggestionList } from "@/components/Wellbeing";
 import { useAuth } from "@/lib/auth";
 import {
   ACCEPTED_TYPES, analyzeFile, analyzePixels, loadEngine, MAX_UPLOAD_MB, validateFile, type ImageResult,
 } from "@/lib/emotion";
 import { emoji } from "@/lib/emotions";
 import { detectionEntry, saveEntry } from "@/lib/history";
+import { logPredictions, rememberFace } from "@/lib/session";
+import { MOODS, SELF_CHECK_PROMPT, suggestionsFor } from "@/lib/wellbeing";
+
+const TIPS = [
+  ["🙂", "Face the camera", "Frontal faces work best; turned heads are often missed."],
+  ["💡", "Even, bright light", "Heavy shadows and backlight lower confidence."],
+  ["🔍", "Big enough", "Faces at least ~50 px wide; the model sees 48×48 grayscale."],
+  ["🧠", "Seven expressions", "Angry, Disgust, Fear, Happy, Sad, Surprise, Neutral."],
+];
 
 type Status = "idle" | "loading" | "done" | "error";
 type Mode = "upload" | "webcam";
@@ -20,14 +30,17 @@ export default function DetectView() {
   const input = useRef<HTMLInputElement>(null);
   const [engine, setEngine] = useState<"loading" | "ready" | "error">("loading");
   const [engineError, setEngineError] = useState<string | null>(null);
-  const [mode, setMode] = useState<Mode>("upload");
+  // The dashboard's "Use camera" opens this page on the webcam tab (/detect?mode=webcam).
+  const [mode, setMode] = useState<Mode>(() =>
+    new URLSearchParams(window.location.search).get("mode") === "webcam" ? "webcam" : "upload");
   const [source, setSource] = useState<Source | null>(null);
   const [gradcam, setGradcam] = useState(true);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImageResult | null>(null);
   const [selected, setSelected] = useState(0);
-  const [saved, setSaved] = useState<Set<number>>(new Set());
+  const [saved, setSaved] = useState<Map<number, boolean>>(new Map()); // face index -> saved to the cloud?
+  const [mood, setMood] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [drag, setDrag] = useState(false);
 
@@ -41,8 +54,9 @@ export default function DetectView() {
   async function run(src: Source, wholeImage = false) {
     setSource(src);
     setResult(null);
-    setSaved(new Set());
+    setSaved(new Map());
     setSelected(0);
+    setMood(null);
     if (src.kind === "file") {
       const problem = validateFile(src.file);
       if (problem) {
@@ -55,8 +69,14 @@ export default function DetectView() {
     setStatus("loading");
     try {
       const opts = { gradcam, wholeImage };
-      setResult(await (src.kind === "file" ? analyzeFile(src.file, opts) : analyzePixels(src.frame, opts)));
+      const r = await (src.kind === "file" ? analyzeFile(src.file, opts) : analyzePixels(src.frame, opts));
+      setResult(r);
       setStatus("done");
+      if (r.faces.length) {
+        const sourceLabel = src.kind === "frame" ? "webcam" : "image";
+        logPredictions(r.faces, sourceLabel);
+        rememberFace(r.faces[0], sourceLabel);
+      }
     } catch (err) {
       setError((err as Error).message);
       setStatus("error");
@@ -85,8 +105,8 @@ export default function DetectView() {
   async function save() {
     if (!user || !result) return;
     setSaving(true);
-    await saveEntry(user.uid, detectionEntry(result.faces[selected], source?.kind === "frame" ? "webcam" : "web"));
-    setSaved(new Set(saved).add(selected));
+    const cloud = await saveEntry(user.uid, detectionEntry(result.faces[selected], source?.kind === "frame" ? "webcam" : "web", mood));
+    setSaved(new Map(saved).set(selected, cloud));
     setSaving(false);
   }
 
@@ -157,6 +177,20 @@ export default function DetectView() {
             <input type="checkbox" checked={gradcam} onChange={(e) => setGradcam(e.target.checked)} />
             Include Grad-CAM model attention
           </label>
+          {status === "idle" && (
+            <>
+              <div className="section"><h2>What the model looks for</h2></div>
+              <div className="grid grid-4">
+                {TIPS.map(([icon, title, text]) => (
+                  <div key={title} className="card hover">
+                    <div style={{ fontSize: "1.4rem" }} aria-hidden="true">{icon}</div>
+                    <div className="card-title" style={{ marginTop: 4 }}>{title}</div>
+                    <p className="muted small">{text}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </>
       )}
       {error && status === "error" && !result && <div className="alert alert-error" role="alert" style={{ marginTop: 14 }}>{error}</div>}
@@ -195,7 +229,7 @@ export default function DetectView() {
                 <div className="row" style={{ marginTop: 10 }} role="tablist" aria-label="Detected faces">
                   {result.faces.map((f, i) => (
                     <button key={f.index} role="tab" aria-selected={i === selected}
-                            className={`chip${i === selected ? " active" : ""}`} onClick={() => setSelected(i)}>
+                            className={`chip${i === selected ? " active" : ""}`} onClick={() => { setSelected(i); setMood(null); rememberFace(f, source?.kind === "frame" ? "webcam" : "image"); }}>
                       Face {f.index} · {emoji(f.emotion)} {f.emotion} {Math.round(f.confidence * 100)}%
                     </button>
                   ))}
@@ -210,13 +244,27 @@ export default function DetectView() {
                   image quality can affect the result.</div>
               )}
               {face.smallFace && <div className="alert alert-info">This face is small, so the model has limited detail.</div>}
-              <div className="row">
-                <button className="btn btn-primary" onClick={save} disabled={saving || saved.has(selected)}>
-                  {saved.has(selected) ? "✓ Saved to history" : saving ? "Saving…" : "Save to history"}
-                </button>
-                <button className="btn" onClick={reset}>{mode === "webcam" ? "Close result" : "Try another image"}</button>
+              <div className="card">
+                <div className="card-title">Save check-in</div>
+                <p className="muted small" style={{ marginTop: 2 }}>How do you actually feel? (optional)</p>
+                <div className="row" style={{ marginTop: 8 }} role="radiogroup" aria-label="How do you actually feel? (optional)">
+                  {Object.entries(MOODS).map(([m, icon]) => (
+                    <button key={m} role="radio" aria-checked={mood === m} disabled={saved.has(selected)}
+                            className={`chip${mood === m ? " active" : ""}`} onClick={() => setMood(mood === m ? null : m)}>{icon} {m}</button>
+                  ))}
+                </div>
+                <div className="row" style={{ marginTop: 12 }}>
+                  <button className="btn btn-primary" onClick={save} disabled={saving || saved.has(selected)}>
+                    {saved.has(selected) ? "✓ Saved to history" : saving ? "Saving…" : "Save to history"}
+                  </button>
+                  <button className="btn" onClick={reset}>{mode === "webcam" ? "Close result" : "Try another image"}</button>
+                </div>
+                {saved.get(selected) === false && (
+                  <div style={{ marginTop: 10 }}><SavedMessage text="✓ Saved." cloud={false} /></div>
+                )}
+                <p className="muted small" style={{ marginTop: 8 }}>Saving stores the expression, confidence and top-3 predictions
+                  {" "}— plus your mood if you pick one — never the image.</p>
               </div>
-              <p className="muted small">Saving stores the expression, confidence and top-3 predictions — never the image.</p>
             </div>
           </div>
 
@@ -245,6 +293,13 @@ export default function DetectView() {
               </div>
             </>
           )}
+          <div className="section"><h2>What you can do next</h2><p>{SELF_CHECK_PROMPT}</p></div>
+          <div className="card" style={{ maxWidth: 760 }}>
+            <div className="card-title" style={{ marginBottom: 6 }}>{suggestionsFor(face.emotion).headline}</div>
+            <SuggestionList items={suggestionsFor(face.emotion).items} />
+          </div>
+          <p className="muted small" style={{ marginTop: 8 }}>General wellbeing ideas, not medical advice. A detected expression
+            doesn&apos;t tell us how you feel.</p>
           <p className="muted small" style={{ marginTop: 24 }}>Analysed in {Math.round(result.timingMs)} ms on your device.</p>
         </>
       )}

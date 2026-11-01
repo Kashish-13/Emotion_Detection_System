@@ -3,14 +3,19 @@
 // Live webcam analysis with the same in-browser inference module as image upload.
 // Frames are processed on the device and never recorded or uploaded.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { EmotionBars, ResultCard } from "@/components/Emotion";
+import { EmotionBars, ResultCard, StatCard } from "@/components/Emotion";
+import { CountBars } from "@/components/Charts";
+import { summarizeSession } from "@/lib/analytics";
+import { color, emoji } from "@/lib/emotions";
+import { logPredictions, rememberFace, resetSessionPredictions, useSession } from "@/lib/session";
 import {
   analyzeFrame, drawFaces, primaryFace, WEBCAM_DETECTION_DOWNSCALE, type FaceAnalysis,
 } from "@/lib/emotion";
 
 const PREDICT_EVERY_MS = 150; // ≈ 6–7 predictions per second at most; never overlapping
+const LOG_INTERVAL_MS = 1000; // add at most one entry per face per second to the session summary (WEBCAM_LOG_INTERVAL_S)
 
-type Live = { faces: number; fps: number; predictionsPerSecond: number; main: FaceAnalysis | null };
+type Live = { faces: FaceAnalysis[]; fps: number; predictionsPerSecond: number; main: FaceAnalysis | null };
 
 function cameraError(err: unknown): string {
   const name = (err as { name?: string })?.name;
@@ -32,6 +37,7 @@ export default function WebcamPanel({ ready, onSnapshot }: { ready: boolean; onS
   const faces = useRef<FaceAnalysis[]>([]);
   const fps = useRef(0);
   const pps = useRef(0);
+  const lastLog = useRef(0);
   const [running, setRunning] = useState(false);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +84,13 @@ export default function WebcamPanel({ ready, onSnapshot }: { ready: boolean; onS
           .then((a) => {
             if (!stream.current) return;
             faces.current = a.faces;
-            setLive({ faces: a.faces.length, fps: fps.current, predictionsPerSecond: pps.current, main: primaryFace(a.faces) ?? null });
+            const main = primaryFace(a.faces) ?? null;
+            setLive({ faces: a.faces, fps: fps.current, predictionsPerSecond: pps.current, main });
+            if (main && Date.now() - lastLog.current >= LOG_INTERVAL_MS) {
+              lastLog.current = Date.now();
+              logPredictions(a.faces, "webcam");
+              rememberFace(main, "webcam");
+            }
           })
           .catch((err) => console.error("Live analysis failed", err, performance.now() - started))
           .finally(() => { busy.current = false; });
@@ -125,6 +137,7 @@ export default function WebcamPanel({ ready, onSnapshot }: { ready: boolean; onS
 
   const main = live?.main ?? null;
   return (
+    <>
     <div className="split">
       <div className="stack">
         <div className="video-frame">
@@ -161,7 +174,7 @@ export default function WebcamPanel({ ready, onSnapshot }: { ready: boolean; onS
       </div>
       <div className="stack" aria-live="polite">
         <div className="grid grid-2">
-          <div className="card"><div className="stat-label">Faces in view</div><div className="stat-value">{running && live ? live.faces : "—"}</div></div>
+          <div className="card"><div className="stat-label">Faces in view</div><div className="stat-value">{running && live ? live.faces.length : "—"}</div></div>
           <div className="card"><div className="stat-label">Predictions / second</div>
             <div className="stat-value">{running && live ? live.predictionsPerSecond.toFixed(1) : "—"}</div>
             <div className="stat-hint">{running && live ? `${live.fps.toFixed(0)} frames / second` : " "}</div></div>
@@ -169,8 +182,16 @@ export default function WebcamPanel({ ready, onSnapshot }: { ready: boolean; onS
         {running && main ? (
           <>
             <ResultCard emotion={main.emotion} confidence={main.confidence}
-                        title={live && live.faces > 1 ? "Current expression · largest face" : "Current expression"} />
+                        title={live && live.faces.length > 1 ? "Current expression · largest face" : "Current expression"} />
+            {main.level === "Low" && <p className="muted small">ⓘ Low confidence — lighting, pose or angle may be affecting the result.</p>}
             <EmotionBars values={main.probabilities} title="Emotion distribution" />
+            {live && live.faces.length > 1 && (
+              <div className="row">
+                {live.faces.map((f, i) => (
+                  <span key={i} className="chip">Face {i + 1} · {emoji(f.emotion)} {f.emotion} {Math.round(f.confidence * 100)}%</span>
+                ))}
+              </div>
+            )}
           </>
         ) : (
           <div className="card empty">
@@ -181,5 +202,35 @@ export default function WebcamPanel({ ready, onSnapshot }: { ready: boolean; onS
         )}
       </div>
     </div>
+    <SessionSummary />
+    </>
+  );
+}
+
+/** Live predictions from this browser session (not saved), like the Streamlit webcam page's "This session". */
+function SessionSummary() {
+  const session = useSession();
+  const summary = summarizeSession(session.predictions);
+  return (
+    <>
+      <div className="section"><h2>This session</h2><p>Live predictions from this browser session (not saved). They describe
+        detected expressions, not how anyone feels.</p></div>
+      {!summary.predictions ? <p className="muted small">No live predictions yet.</p> : (
+        <>
+          <div className="grid grid-4">
+            <StatCard label="Predictions logged" value={String(summary.predictions)} hint="At most one per second live" icon="🧾" />
+            <StatCard label="Faces detected" value={String(session.facesDetected)} icon="👥" />
+            <StatCard label="Most frequent" value={summary.dominant ?? "—"} icon="🧭" emotion={summary.dominant} />
+            <StatCard label="Average confidence" value={`${Math.round((summary.averageConfidence ?? 0) * 100)}%`} icon="🎯" />
+          </div>
+          <div style={{ marginTop: 14 }}>
+            <CountBars title="Predictions by expression" items={Object.entries(summary.counts).map(([e, n]) => ({
+              key: e, label: <><span aria-hidden="true">{emoji(e)}</span>{e}</>, color: color(e), value: n,
+            }))} />
+          </div>
+          <button className="btn btn-sm" style={{ marginTop: 12 }} onClick={resetSessionPredictions}>↺ Reset session</button>
+        </>
+      )}
+    </>
   );
 }
