@@ -6,7 +6,7 @@ import {
   addDoc, collection, deleteDoc, doc, getDocs, limit as qLimit, query,
 } from "firebase/firestore";
 import { firestore } from "./firebase";
-import type { FaceResult } from "./api";
+import type { FaceResult } from "./emotion";
 
 export type HistoryEntry = {
   id: string;

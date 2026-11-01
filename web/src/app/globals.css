@@ -226,3 +226,14 @@ table.table { width: 100%; border-collapse: collapse; font-size: .92rem; }
 @media (max-width: 480px) { .grid-4 { grid-template-columns: 1fr; } }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- webcam ---------- */
+.video-frame { position: relative; border: 1px solid var(--line); border-radius: var(--radius); background: #fff;
+  box-shadow: var(--shadow); overflow: hidden; padding: 8px; }
+.video-frame canvas { display: block; width: 100%; height: auto; border-radius: 8px; }
+.video-off { display: grid; place-items: center; text-align: center; min-height: 300px; border-radius: 8px;
+  background: var(--surface-2); padding: 24px; }
+.live-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  font-size: .74rem; font-weight: 650; letter-spacing: .06em; color: var(--success); background: var(--success-bg);
+  border: 1px solid var(--success-line); }
+.live-badge i { width: 8px; height: 8px; border-radius: 50%; background: #22a06b; }

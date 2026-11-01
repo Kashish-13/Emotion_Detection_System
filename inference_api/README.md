@@ -1,10 +1,11 @@
 # EmotionSense inference API
 
 A small FastAPI service around the project's **existing, unchanged** prediction pipeline (`src/predict.py`,
-`src/gradcam.py`, `models/emotion_model.keras`). It serves the Vercel web app (`../web`).
+`src/gradcam.py`, `models/emotion_model.keras`).
 
-Why a separate service: TensorFlow (over 1 GB installed) does not fit Vercel's ~250 MB Python function limit,
-and Grad-CAM needs TensorFlow gradients. Hugging Face Spaces (Docker, free CPU tier, 16 GB RAM) runs it as-is.
+> **Optional.** The web app (`../web`) now runs inference entirely in the browser (TensorFlow.js + OpenCV.js) and
+> does not call this API. It is kept for anyone who wants a server-side JSON API for the model. Note that Hugging Face
+> now requires a paid PRO plan for Docker Spaces; any Docker host works with the Dockerfile below.
 
 ## Endpoints
 

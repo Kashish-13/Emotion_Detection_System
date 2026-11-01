@@ -3,7 +3,7 @@ import { EMOTIONS, color, emoji } from "@/lib/emotions";
 import metrics from "@/data/model-metrics.json";
 
 const STEPS = [
-  ["Upload a photo", "JPG, PNG or WebP. Images are analysed in memory and never stored."],
+  ["Upload a photo or use your webcam", "Everything is analysed in your browser — images are never uploaded or stored."],
   ["The CNN analyses each face", "OpenCV finds every face; a CNN trained on FER-2013 estimates its expression."],
   ["Understand the result", "Confidence, top-3 alternatives, all seven probabilities and Grad-CAM model attention."],
 ];
@@ -38,7 +38,7 @@ export default function Landing() {
               </a>
             </div>
             <div className="row" style={{ marginTop: 16 }}>
-              <span className="chip">🔒 Images never stored</span>
+              <span className="chip">🔒 Runs in your browser</span>
               <span className="chip">🧠 7 expressions</span>
               <span className="chip">🌿 Not a diagnostic tool</span>
             </div>

@@ -23,8 +23,8 @@ export default function AboutPage() {
       </div>
       <p className="muted" style={{ marginTop: 12 }}>
         A custom VGG-style CNN ({metrics.parameters.toLocaleString("en-US")} parameters, {metrics.modelSizeMb} MB) trained on
-        {" "}{metrics.trainImages.toLocaleString("en-US")} FER-2013 images. The web app sends your photo to the same Python
-        pipeline the Streamlit app uses, so both give identical predictions.
+        {" "}{metrics.trainImages.toLocaleString("en-US")} FER-2013 images. The web app runs this same model in your browser
+        (TensorFlow.js + OpenCV.js), validated to give the same predictions as the Python pipeline the Streamlit app uses.
       </p>
 
       <div className="section"><h2>Performance</h2><p>On {metrics.leakageAware.n.toLocaleString("en-US")} test images that do not appear in the training data.</p></div>
@@ -64,7 +64,7 @@ export default function AboutPage() {
         <div className="card">
           <div className="card-title">🔒 Privacy</div>
           <ul className="muted small" style={{ margin: "8px 0 0", paddingLeft: 18 }}>
-            <li>Images are analysed in memory and never stored.</li>
+            <li>Images and webcam frames are analysed in your browser and never uploaded or stored.</li>
             <li>Saving keeps only the expression, confidence and top-3 — in your own Firestore space.</li>
             <li>Security rules allow only you to read or delete your entries.</li>
           </ul>

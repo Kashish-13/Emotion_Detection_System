@@ -1,6 +1,8 @@
-// The seven FER-2013 classes, in the model's output order (src/config.py EMOTIONS). Do not reorder.
-export const EMOTIONS = ["Angry", "Disgust", "Fear", "Happy", "Sad", "Surprise", "Neutral"] as const;
-export type Emotion = (typeof EMOTIONS)[number];
+// Display helpers for emotions. The labels themselves (model output order) and the confidence
+// bands live in ./emotion/core, shared with the in-browser inference module.
+import type { Emotion } from "./emotion/core";
+
+export { EMOTIONS, confidenceLevel, type Emotion, type Level } from "./emotion/core";
 
 // Same colours and emoji as the Streamlit app (src/config.py). Colour is never used alone:
 // every emotion is always shown with its emoji and name.
@@ -32,10 +34,3 @@ export const color = (emotion: string) => EMOTION_COLORS[emotion as Emotion] ?? 
 export const emoji = (emotion: string) => EMOTION_EMOJI[emotion as Emotion] ?? "🙂";
 
 export const pct = (p: number) => (p < 0.01 ? "<1%" : `${Math.round(p * 100)}%`);
-
-// Application confidence bands (src/config.py HIGH_CONFIDENCE / MODERATE_CONFIDENCE).
-export type Level = "High" | "Moderate" | "Low";
-export function confidenceLevel(confidence: number): Level {
-  if (confidence >= 0.7) return "High";
-  return confidence >= 0.4 ? "Moderate" : "Low";
-}

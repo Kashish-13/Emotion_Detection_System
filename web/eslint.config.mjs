@@ -18,6 +18,7 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      "public/vendor/**", // third-party builds copied by scripts/copy-vendor.mjs
     ],
   },
 ];

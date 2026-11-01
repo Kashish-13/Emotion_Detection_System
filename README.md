@@ -323,17 +323,19 @@ users/{uid}/checkins/{checkinId}
 
 ## Web version (Next.js on Vercel)
 
-A second front end, separate from the Streamlit app (which is unchanged):
+A second front end in [`web/`](web/README.md), separate from the Streamlit app (which is unchanged): Next.js +
+TypeScript with landing, login/sign-up, dashboard, detect (upload and webcam), history and about pages.
 
-| Part | Folder | Hosting | What it does |
-|---|---|---|---|
-| Web app | [`web/`](web/README.md) | Vercel | Next.js + TypeScript: landing, login/sign-up, dashboard, detect, history, about |
-| Inference API | [`inference_api/`](inference_api/README.md) | Hugging Face Spaces (Docker) | FastAPI around the **unchanged** `src/` pipeline and model; prediction + Grad-CAM |
-
-- **Why two hosts:** TensorFlow is over 1 GB installed, far beyond Vercel's ~250 MB Python function limit, so the model runs in a Docker container instead of a Vercel function.
-- **Same predictions:** the API calls `EmotionPredictor` and `GradCAM` directly; a test checks its output matches the Streamlit pipeline exactly.
-- **Shared history:** same Firebase project and `users/{uid}/checkins` format, so predictions saved in either app appear in both. The existing `firestore.rules` apply unchanged.
-- **Security:** the API checks the user's Firebase ID token, allows only your site's origin, and validates type, size and dimensions before decoding. No private credentials are used anywhere.
+- **Inference runs in the browser.** The same trained weights, converted to TensorFlow.js without retraining, run with
+  OpenCV.js for face detection and preprocessing. No Python server, Docker image or paid service is needed, and images
+  never leave the user's device. The whole app deploys to Vercel as static pages.
+- **Same predictions as Python.** The browser pipeline reproduces `src/` step by step. On 44 real faces it gives
+  identical model inputs, probabilities within 3.3 × 10⁻⁷, the same predicted emotion every time, and Grad-CAM
+  heatmaps within 3 × 10⁻⁶.
+- **Shared history:** same Firebase project and `users/{uid}/checkins` format, so predictions saved in either app
+  appear in both. The existing `firestore.rules` apply unchanged.
+- [`inference_api/`](inference_api/README.md) is an optional FastAPI + Docker server version of the same pipeline.
+  The web app does not use it.
 
 ## Project structure
 
@@ -341,7 +343,7 @@ A second front end, separate from the Streamlit app (which is unchanged):
 Emotion_Detection_System/
 ├── app.py                      # Streamlit entry point: theme, sign-in gate, navigation
 ├── web/                        # Next.js web app for Vercel (see web/README.md)
-├── inference_api/              # FastAPI + Dockerfile for Hugging Face Spaces (see inference_api/README.md)
+├── inference_api/              # optional FastAPI + Docker server for the same pipeline (not used by web/)
 ├── src/
 │   ├── config.py               # paths, labels, hyperparameters, thresholds, colours, Firebase settings
 │   ├── data_loader.py          # FER-2013 loading (+ --download), .npz cache
