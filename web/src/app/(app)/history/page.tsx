@@ -7,18 +7,17 @@ import { CountBars, DayColumns, TimeChart } from "@/components/Charts";
 import { EmotionPill, EmptyState, StatCard } from "@/components/Emotion";
 import { MOOD_COLORS, Timeline } from "@/components/Timeline";
 import {
-  detections, filterSince, formatTime, generateInsights, historyStats, localDay, moodReports, mostCommonMood, topFactors,
+  detections, filterBetween, filterSince, formatTime, generateInsights, historyStats, localDay, moodReports, mostCommonMood,
+  sourceLabel, topFactors,
 } from "@/lib/analytics";
 import { EMOTIONS, HIGH_CONFIDENCE, MODERATE_CONFIDENCE } from "@/lib/emotion/core";
 import { color, emoji } from "@/lib/emotions";
 import { clearHistory, deleteEntry, type HistoryEntry } from "@/lib/history";
 import { useHistory } from "@/lib/useHistory";
-import { ACTIVITIES, MOOD_SCORE, MOODS } from "@/lib/wellbeing";
+import { ACTIVITIES, MOOD_SCORE, MOODS, SCALES } from "@/lib/wellbeing";
 
-const RANGES: Record<string, number | null> = { "7 days": 7, "30 days": 30, "All time": null };
-const KIND_LABEL: Record<HistoryEntry["kind"], string> = {
-  detection: "Detection", checkin: "Check-in", journal: "Journal", reset: "Wellbeing activity",
-};
+const CUSTOM = "Custom range";
+const RANGES: Record<string, number | null> = { "7 days": 7, "30 days": 30, "All time": null, [CUSTOM]: null };
 const FILTERS = [["all", "All entries"], ["detection", "Predictions"], ["checkin", "Check-ins"], ["journal", "Journal"],
   ["reset", "Activities"]] as const;
 const INSIGHT_ICON = { "Model signal": "🧭", "Self-reported mood": "💬", Tip: "💡" };
@@ -26,7 +25,10 @@ const pct = (x: number) => `${Math.round(x * 100)}%`;
 
 function details(e: HistoryEntry): string {
   if (e.kind === "detection") return (e.topPredictions ?? []).slice(1).map((p) => `${p.emotion} ${pct(p.probability)}`).join(", ");
-  if (e.kind === "checkin") return (e.moodFactors ?? []).join(", ");
+  if (e.kind === "checkin") {
+    const ratings = SCALES.filter((s) => e[s.key] != null).map((s) => `${s.label} ${e[s.key]}/5`).join(" · ");
+    return [ratings, (e.moodFactors ?? []).join(", ")].filter(Boolean).join(" — ");
+  }
   if (e.kind === "journal") return e.prompt ?? "";
   return `${ACTIVITIES[e.activity ?? ""]?.title ?? "Activity"} → ${e.feelingAfter ?? ""}`;
 }
@@ -78,6 +80,9 @@ export default function HistoryPage() {
   const { entries: all, reload, uid } = useHistory();
   const [span, setSpan] = useState("30 days");
   const [filter, setFilter] = useState<(typeof FILTERS)[number][0]>("all");
+  const [emotion, setEmotion] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [sure, setSure] = useState(false);
@@ -123,7 +128,7 @@ export default function HistoryPage() {
     );
   }
 
-  const entries = filterSince(all, RANGES[span]);
+  const entries = span === CUSTOM ? filterBetween(all, from, to) : filterSince(all, RANGES[span]);
   const stats = historyStats(entries);
   const det = detections(entries);
   const moods = moodReports(entries);
@@ -131,7 +136,9 @@ export default function HistoryPage() {
   const insights = generateInsights(entries);
   const perDay = new Map<string, number>();
   for (const e of [...entries].reverse()) perDay.set(localDay(e.timestamp), (perDay.get(localDay(e.timestamp)) ?? 0) + 1);
-  const shown = entries.filter((e) => filter === "all" || e.kind === filter).slice(0, 200);
+  const matching = entries.filter((e) => (filter === "all" || e.kind === filter) && (!emotion || e.detectedEmotion === emotion));
+  const shown = matching.slice(0, 200);
+  const rangeHint = span === CUSTOM ? (from || to ? "In the selected dates" : "All time") : RANGES[span] ? `In the last ${span}` : "All time";
 
   return (
     <>
@@ -141,10 +148,21 @@ export default function HistoryPage() {
           <button key={r} role="tab" aria-selected={span === r} className={`chip${span === r ? " active" : ""}`} onClick={() => setSpan(r)}>{r}</button>
         ))}
       </div>
+      {span === CUSTOM && (
+        <div className="row" style={{ marginBottom: 16 }}>
+          <label className="field inline"><span>From</span>
+            <input type="date" className="input" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
+          </label>
+          <label className="field inline"><span>To</span>
+            <input type="date" className="input" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
+          </label>
+          {(from || to) && <button className="btn btn-sm btn-ghost" onClick={() => { setFrom(""); setTo(""); }}>Clear dates</button>}
+        </div>
+      )}
       {notice && <div className="alert alert-warning" style={{ marginBottom: 14 }}>{notice}</div>}
 
       <div className="grid grid-4">
-        <StatCard label="Total entries" value={String(stats.total)} hint={RANGES[span] ? `In the last ${span}` : "All time"} icon="🗂️" />
+        <StatCard label="Total entries" value={String(stats.total)} hint={rangeHint} icon="🗂️" />
         <StatCard label="Most common mood" value={mood ? `${MOODS[mood]} ${mood}` : "—"} hint="Self-reported" icon="💬" />
         <StatCard label="Top factors" value={topFactors(entries).join(" · ") || "—"} hint="Selected most often" icon="🧩" />
         <StatCard label="Current streak" value={`${stats.streak} day${stats.streak === 1 ? "" : "s"}`} hint="Days in a row" icon="🔥" />
@@ -179,23 +197,35 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      <div className="section"><h2>Your recent activity</h2></div>
-      <div className="row" style={{ marginBottom: 12 }} role="tablist" aria-label="Filter history">
-        {FILTERS.map(([k, label]) => (
-          <button key={k} role="tab" aria-selected={filter === k} className={`chip${filter === k ? " active" : ""}`} onClick={() => setFilter(k)}>{label}</button>
-        ))}
+      <div className="section"><h2>Your recent activity</h2>
+        <p>{matching.length} entr{matching.length === 1 ? "y" : "ies"}{matching.length > shown.length ? ` · showing the latest ${shown.length}` : ""}</p></div>
+      <div className="row" style={{ marginBottom: 12, justifyContent: "space-between" }}>
+        <div className="row" role="tablist" aria-label="Filter history">
+          {FILTERS.map(([k, label]) => (
+            <button key={k} role="tab" aria-selected={filter === k} className={`chip${filter === k ? " active" : ""}`} onClick={() => setFilter(k)}>{label}</button>
+          ))}
+        </div>
+        <label className="row small" style={{ gap: 8 }}>
+          <span className="muted">Expression</span>
+          <select className="input input-sm" value={emotion} onChange={(e) => setEmotion(e.target.value)}>
+            <option value="">All expressions</option>
+            {EMOTIONS.map((e) => <option key={e} value={e}>{emoji(e)} {e}</option>)}
+          </select>
+        </label>
       </div>
       {shown.length === 0 ? (
-        <EmptyState icon="🔎" title="Nothing here yet" text="No entries of this type in the selected time range." />
+        <EmptyState icon="🔎" title="No matching entries" text="Nothing matches these filters in the selected time range.">
+          {(filter !== "all" || emotion) && <button className="btn" onClick={() => { setFilter("all"); setEmotion(""); }}>Clear filters</button>}
+        </EmptyState>
       ) : (
         <div className="card table-wrap" style={{ padding: "6px 10px" }}>
           <table className="table">
-            <thead><tr><th>When</th><th>Type</th><th>Expression</th><th>Confidence</th><th>Mood</th><th>Details</th><th><span className="sr-only">Actions</span></th></tr></thead>
+            <thead><tr><th>When</th><th>Source</th><th>Expression</th><th>Confidence</th><th>Mood</th><th>Details</th><th><span className="sr-only">Actions</span></th></tr></thead>
             <tbody>
               {shown.map((e) => (
                 <tr key={e.id}>
                   <td className="muted" style={{ whiteSpace: "nowrap" }}>{formatTime(e.timestamp)}</td>
-                  <td>{KIND_LABEL[e.kind] ?? e.kind}</td>
+                  <td style={{ whiteSpace: "nowrap" }}>{sourceLabel(e)}</td>
                   <td>{e.detectedEmotion ? <EmotionPill emotion={e.detectedEmotion} /> : <span className="muted">—</span>}</td>
                   <td>{e.confidence != null ? pct(e.confidence) : <span className="muted">—</span>}</td>
                   <td style={{ whiteSpace: "nowrap" }}>{e.selfReportedMood ? `${MOODS[e.selfReportedMood] ?? ""} ${e.selfReportedMood}` : <span className="muted">—</span>}</td>

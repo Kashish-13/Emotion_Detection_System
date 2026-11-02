@@ -7,13 +7,33 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { newEntry, saveEntry } from "@/lib/history";
 import {
-  ACTIVITIES, DISTRESS_NOTE, FEELING_ICONS, FEELINGS_AFTER, JOURNAL_PROMPTS, type Suggestion,
+  ACTIVITIES, DISTRESS_NOTE, FEELING_ICONS, FEELINGS_AFTER, JOURNAL_PROMPTS, type Scale, type Suggestion,
 } from "@/lib/wellbeing";
 
 export const activityHref = (id: string) => `/wellbeing?activity=${encodeURIComponent(id)}`;
 
 export function DistressNote() {
-  return <div className="alert alert-info">💜 {DISTRESS_NOTE}</div>;
+  return <div className="alert alert-info">💜 {DISTRESS_NOTE} <Link href="/support">Find support →</Link></div>;
+}
+
+/** A 1–5 rating for one check-in scale; clicking the selected value clears it (every rating is optional). */
+export function ScalePicker({ scale, value, onChange }: { scale: Scale; value?: number; onChange: (v?: number) => void }) {
+  return (
+    <div className="scale-field">
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <span className="scale-q">{scale.question}</span>
+        <span className="muted small">{value ? `${value} / 5` : "Optional"}</span>
+      </div>
+      <div className="scale" role="radiogroup" aria-label={scale.question}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button type="button" key={n} role="radio" aria-checked={value === n} className={`scale-btn${value === n ? " active" : ""}`}
+                  aria-label={`${n} of 5${n === 1 ? ` (${scale.low})` : n === 5 ? ` (${scale.high})` : ""}`}
+                  onClick={() => onChange(value === n ? undefined : n)}>{n}</button>
+        ))}
+      </div>
+      <div className="scale-ends" aria-hidden="true"><span>{scale.low}</span><span>{scale.high}</span></div>
+    </div>
+  );
 }
 
 /** Confirmation after saving, honest about where the entry went. */

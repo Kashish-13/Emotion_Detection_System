@@ -130,6 +130,39 @@ export const MOOD_SUGGESTIONS: Record<string, Suggestion> = {
     + "can too.", "one_minute_reset"],
 };
 
+// Optional 1–5 ratings in a check-in, saved as energyLevel / stressLevel / sleepQuality (the user's own report).
+export type ScaleKey = "energyLevel" | "stressLevel" | "sleepQuality";
+export type Scale = { key: ScaleKey; label: string; question: string; low: string; high: string };
+export const SCALES: Scale[] = [
+  { key: "energyLevel", label: "Energy", question: "How is your energy?", low: "Very low", high: "Very high" },
+  { key: "stressLevel", label: "Stress", question: "How stressed do you feel?", low: "Not at all", high: "Very stressed" },
+  { key: "sleepQuality", label: "Sleep", question: "How did you sleep last night?", low: "Very poorly", high: "Very well" },
+];
+
+// "Ways to feel better": general, evidence-informed self-help ideas by situation. Chosen by the user, never by the
+// model, and not a treatment.
+export const SITUATIONS: Record<string, { emoji: string; title: string; intro: string; items: Suggestion[] }> = {
+  stressed: { emoji: "😮‍💨", title: "Feeling stressed", intro: "When there's too much at once, make the next step smaller.",
+    items: [["Try a short breathing exercise", "breathing"], ["Take a short break away from your screen", "walk"],
+      ["Break a large task into smaller steps and write down only the next one", "focus_reset"],
+      ["Silence unnecessary notifications for a while", null]] },
+  anxious: { emoji: "😟", title: "Feeling anxious", intro: "Bring your attention back to the present moment.",
+    items: [["Try a grounding exercise", "grounding"], ["Slow your breathing, with a longer exhale", "one_minute_reset"],
+      ["Write down one thing you can control right now", "journaling"], ["Talk to someone you trust", null]] },
+  low: { emoji: "😔", title: "Feeling low or sad", intro: "Small, familiar actions can make a day feel more manageable.",
+    items: [["Keep a basic routine: regular meals, water, getting up at your usual time", null],
+      ["Get some daylight or gentle movement", "walk"], ["Connect with someone you trust", null],
+      ["Do one small, manageable activity", "focus_reset"]] },
+  angry: { emoji: "😤", title: "Feeling angry", intro: "Create a little space between the feeling and your response.",
+    items: [["Pause before you respond", "mindful_pause"], ["Step away from the situation for a while", "walk"],
+      ["Take a few slow breaths", "breathing"], ["Write down what triggered the reaction", "journaling"]] },
+  sleep: { emoji: "🌙", title: "Sleeping poorly", intro: "Sleep usually responds to steady habits more than quick fixes.",
+    items: [["Keep consistent sleep and wake times, including weekends", null],
+      ["Reduce screen use in the hour before bed", null],
+      ["Build a calm wind-down routine before bed", "mindful_pause"],
+      ["Avoid caffeine late in the day", null]] },
+};
+
 export const JOURNAL_PROMPTS = [
   "What went well today?",
   "What is currently bothering you?",

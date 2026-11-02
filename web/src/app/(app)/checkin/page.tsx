@@ -1,16 +1,19 @@
 "use client";
 
-// Daily Check-In: self-reported mood, factors and an optional written reflection (src/ui/views/checkin.py).
+// Daily Check-In: self-reported mood, optional energy / stress / sleep ratings, factors and a written reflection
+// (src/ui/views/checkin.py; the ratings are web-only extra fields the Streamlit app ignores).
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
-import { DistressNote, SavedMessage, SuggestionList } from "@/components/Wellbeing";
+import { DistressNote, SavedMessage, ScalePicker, SuggestionList } from "@/components/Wellbeing";
 import { useAuth } from "@/lib/auth";
 import { newEntry, saveEntry } from "@/lib/history";
-import { MOOD_FACTORS, MOOD_SUGGESTIONS, MOODS } from "@/lib/wellbeing";
+import { MOOD_FACTORS, MOOD_SUGGESTIONS, MOODS, SCALES, type ScaleKey } from "@/lib/wellbeing";
 
 export default function CheckInPage() {
   const { user } = useAuth();
   const [mood, setMood] = useState<string | null>(null);
   const [factors, setFactors] = useState<string[]>([]);
+  const [ratings, setRatings] = useState<Partial<Record<ScaleKey, number>>>({});
   const [note, setNote] = useState("");
   const [keepNote, setKeepNote] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -23,11 +26,12 @@ export default function CheckInPage() {
     if (!user) return;
     setSaving(true);
     const cloud = await saveEntry(user.uid, newEntry("checkin", {
-      selfReportedMood: mood, moodFactors: factors, journalText: keepNote ? note.trim() : undefined,
+      selfReportedMood: mood, moodFactors: factors, ...ratings, journalText: keepNote ? note.trim() : undefined,
     }));
     setSaved({ mood, cloud });
     setMood(null); // the form clears after saving, like the Streamlit form
     setFactors([]);
+    setRatings({});
     setNote("");
     setSaving(false);
   }
@@ -45,12 +49,20 @@ export default function CheckInPage() {
       <div className="split wide">
         <form onSubmit={submit} className="stack">
           <h3 className="form-h">Pick the card that fits best</h3>
+          <p className="muted small" style={{ marginTop: -4 }}>Recorded for {new Date().toLocaleString(undefined, { weekday: "long", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
           <div className="mood-grid" role="radiogroup" aria-label="Mood">
             {Object.entries(MOODS).map(([m, icon]) => (
               <button type="button" key={m} role="radio" aria-checked={mood === m} className={`mood-card${mood === m ? " active" : ""}`}
                       onClick={() => { setMood(m); setWarn(false); setSaved(null); }}>
                 <span className="mood-emoji" aria-hidden="true">{icon}</span>{m}
               </button>
+            ))}
+          </div>
+          <h3 className="form-h">A few quick ratings</h3>
+          <div className="card stack" style={{ padding: "14px 16px" }}>
+            {SCALES.map((sc) => (
+              <ScalePicker key={sc.key} scale={sc} value={ratings[sc.key]}
+                           onChange={(v) => { setRatings({ ...ratings, [sc.key]: v }); setSaved(null); }} />
             ))}
           </div>
           <h3 className="form-h">What has been affecting you today?</h3>
@@ -82,6 +94,7 @@ export default function CheckInPage() {
                 <h2>A small next step</h2><p>You checked in as {MOODS[saved.mood]} {saved.mood}.</p>
               </div>
               <div className="card"><SuggestionList items={[MOOD_SUGGESTIONS[saved.mood]]} compact /></div>
+              <Link href="/tracker" className="btn btn-block">See your wellbeing trends →</Link>
               {(saved.mood === "Low" || saved.mood === "Difficult") && <DistressNote />}
             </>
           ) : (
@@ -94,7 +107,7 @@ export default function CheckInPage() {
           <div className="card">
             <div className="stat-label">🔒 Your data</div>
             <p className="muted small" style={{ marginTop: 4 }}>
-              Only your mood, the factors you pick, and (if you choose) your note are saved — privately, in your own
+              Only your mood, your ratings, the factors you pick, and (if you choose) your note are saved — privately, in your own
               account. This is self-reported and is never combined into a diagnosis.
             </p>
           </div>

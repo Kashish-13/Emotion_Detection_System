@@ -45,19 +45,22 @@ function timeTicks(min: number, max: number, width: number): number[] {
 }
 
 /** Horizontal count bars in a fixed category order. */
-export function CountBars({ title, items }:
-  { title: string; items: { key: string; label: ReactNode; color: string; value: number }[] }) {
-  const max = Math.max(1, ...items.map((i) => i.value));
+export function CountBars({ title, items, max: fixedMax, format = String, caption }: {
+  title: string; items: { key: string; label: ReactNode; color: string; value: number }[];
+  max?: number; format?: (v: number) => string; caption?: string;
+}) {
+  const max = fixedMax ?? Math.max(1, ...items.map((i) => i.value));
   return (
     <div className="chart">
       <div className="chart-title">{title}</div>
       {items.map((i) => (
-        <div key={i.key} className="bar-row" style={{ "--c": i.color } as CSSProperties} title={`${i.key}: ${i.value}`}>
+        <div key={i.key} className="bar-row" style={{ "--c": i.color } as CSSProperties} title={`${i.key}: ${format(i.value)}`}>
           <div className="bar-name">{i.label}</div>
           <div className="bar-track"><div className="bar-fill" style={{ width: `${(i.value / max) * 100}%` }} /></div>
-          <div className="bar-value">{i.value}</div>
+          <div className="bar-value">{format(i.value)}</div>
         </div>
       ))}
+      {caption && <p className="muted small" style={{ marginTop: 6 }}>{caption}</p>}
     </div>
   );
 }

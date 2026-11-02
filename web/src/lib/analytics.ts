@@ -6,7 +6,7 @@
 // Neither is a measurement of anyone's actual emotional or mental state, and no insight here is a diagnosis.
 import { EMOTIONS, MODERATE_CONFIDENCE } from "./emotion/core.ts";
 import type { HistoryEntry } from "./history";
-import { MOOD_SCORE } from "./wellbeing.ts";
+import { MOOD_SCORE, type ScaleKey } from "./wellbeing.ts";
 
 const DAY_MS = 24 * 3600 * 1000;
 
@@ -122,6 +122,133 @@ export function generateInsights(entries: HistoryEntry[], recent = 10): Insight[
       + "reads expressions, and expressions and feelings often differ." });
   }
   return insights;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Wellbeing tracker: the user's own 1–5 reports (mood from any mood report; energy, stress, sleep from check-ins).
+// ---------------------------------------------------------------------------------------------------------------
+export type Metric = "mood" | ScaleKey;
+export const METRIC_LABEL: Record<Metric, string> = {
+  mood: "Mood", energyLevel: "Energy", stressLevel: "Stress", sleepQuality: "Sleep",
+};
+
+/** The entry's 1–5 score for a metric, or null if it wasn't reported. */
+export function metricScore(e: HistoryEntry, m: Metric): number | null {
+  if (m === "mood") return e.selfReportedMood != null && e.selfReportedMood in MOOD_SCORE ? MOOD_SCORE[e.selfReportedMood] : null;
+  const v = e[m];
+  return typeof v === "number" && v >= 1 && v <= 5 ? v : null;
+}
+
+export function averageScore(entries: HistoryEntry[], m: Metric): number | null {
+  const v = entries.map((e) => metricScore(e, m)).filter((x): x is number => x != null);
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+}
+
+/** Average score per local day, oldest first. */
+export function dailyAverages(entries: HistoryEntry[], m: Metric): { day: string; value: number; n: number }[] {
+  const days = new Map<string, number[]>();
+  for (const e of entries) {
+    const v = metricScore(e, m);
+    if (v != null) days.set(localDay(e.timestamp), [...(days.get(localDay(e.timestamp)) ?? []), v]);
+  }
+  return [...days].sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, v]) => ({ day, value: v.reduce((a, b) => a + b, 0) / v.length, n: v.length }));
+}
+
+/** Entries in [now - 2·days, now - days): the period just before filterSince(entries, days). */
+export function previousPeriod(entries: HistoryEntry[], days: number, now = Date.now()): HistoryEntry[] {
+  return entries.filter((e) => {
+    const t = Date.parse(e.timestamp);
+    return t >= now - 2 * days * DAY_MS && t < now - days * DAY_MS;
+  });
+}
+
+/** Entries between two local dates ("YYYY-MM-DD", both inclusive; either may be empty). */
+export function filterBetween(entries: HistoryEntry[], from?: string, to?: string): HistoryEntry[] {
+  return entries.filter((e) => {
+    const d = localDay(e.timestamp);
+    return (!from || d >= from) && (!to || d <= to);
+  });
+}
+
+/** Entries per local day for the last `days` days (zeros included), or for every day with data. Oldest first. */
+export function dayCounts(entries: HistoryEntry[], days: number | null, today = new Date()): [string, number][] {
+  const counts = new Map<string, number>();
+  if (days) {
+    for (let i = days - 1; i >= 0; i--) {
+      counts.set(localDay(new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)), 0);
+    }
+  }
+  for (const e of entries) {
+    const d = localDay(e.timestamp);
+    if (!days || counts.has(d)) counts.set(d, (counts.get(d) ?? 0) + 1);
+  }
+  return [...counts].sort(([a], [b]) => a.localeCompare(b));
+}
+
+export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/** Average score by weekday, Monday first (null where there is no data). */
+export function weekdayAverages(entries: HistoryEntry[], m: Metric): (number | null)[] {
+  const sums = WEEKDAYS.map(() => [0, 0]);
+  for (const e of entries) {
+    const v = metricScore(e, m);
+    if (v == null) continue;
+    const w = (new Date(e.timestamp).getDay() + 6) % 7;
+    sums[w][0] += v;
+    sums[w][1] += 1;
+  }
+  return sums.map(([s, n]) => (n ? s / n : null));
+}
+
+/** Entries where the user reported any wellbeing metric (check-ins, or detections saved with a mood). */
+export const wellbeingReports = (entries: HistoryEntry[]) =>
+  entries.filter((e) => (Object.keys(METRIC_LABEL) as Metric[]).some((m) => metricScore(e, m) != null));
+
+const fmt1 = (x: number) => x.toFixed(1);
+
+/** Plain-language observations for the tracker. `entries` is the full history; `days` the selected range
+ *  (null = all data, compared month by month). Describes the user's own reports only — never a diagnosis. */
+export function trackerInsights(entries: HistoryEntry[], days: number | null, now = Date.now()): Insight[] {
+  const span = days ?? 30;
+  const current = filterSince(entries, span, now);
+  const previous = previousPeriod(entries, span, now);
+  const before = days ? `the previous ${days} days` : "the 30 days before";
+  const insights: Insight[] = [];
+  const count = (list: HistoryEntry[], m: Metric) => list.filter((e) => metricScore(e, m) != null).length;
+
+  for (const m of ["mood", "stressLevel", "energyLevel", "sleepQuality"] as Metric[]) {
+    if (count(current, m) < 2 || count(previous, m) < 2) continue;
+    const a = averageScore(current, m)!;
+    const b = averageScore(previous, m)!;
+    if (Math.abs(a - b) < 0.3) continue;
+    const what = m === "mood" ? "self-reported mood" : m === "sleepQuality" ? "sleep rating" : `${METRIC_LABEL[m].toLowerCase()} level`;
+    insights.push({ source: "Self-reported mood",
+      text: `${days ? "Your" : "Over the last 30 days, your"} average ${what} was ${a > b ? "higher" : "lower"} than in ${before} (${fmt1(a)} vs ${fmt1(b)} out of 5).` });
+  }
+
+  const inRange = days ? current : entries;
+  const stressful = dailyAverages(inRange, "stressLevel").filter((d) => d.value >= 4).length;
+  if (stressful) {
+    insights.push({ source: "Self-reported mood",
+      text: `You reported high stress (4–5) on ${stressful} day${stressful === 1 ? "" : "s"} ${days ? `in the last ${days} days` : "so far"}.` });
+  }
+  const checkinDays = new Set(inRange.filter((e) => e.kind === "checkin").map((e) => localDay(e.timestamp))).size;
+  if (days && checkinDays) {
+    insights.push({ source: "Self-reported mood", text: `You checked in on ${checkinDays} of the last ${days} days.` });
+  }
+  const moods = inRange.map((e) => metricScore(e, "mood")).filter((x): x is number => x != null);
+  if (moods.length >= 3 && moods.filter((v) => v <= 2).length >= 3) {
+    insights.push({ source: "Tip", text: "You've described your mood as low or difficult several times. Talking with someone "
+      + "you trust can help, and if it keeps feeling hard, a mental-health professional can offer support." });
+  }
+  return insights;
+}
+
+/** Where an entry came from, for the history table. */
+export function sourceLabel(e: HistoryEntry): string {
+  if (e.kind === "detection") return /cam/i.test(e.source ?? "") ? "Webcam" : "Image";
+  return { checkin: "Check-in", journal: "Journal", reset: "Activity" }[e.kind] ?? e.kind;
 }
 
 /** Webcam/image session summary (summarize_session). */

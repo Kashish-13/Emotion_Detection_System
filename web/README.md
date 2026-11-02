@@ -13,16 +13,37 @@ Browser ──► Next.js (this folder, static pages on Vercel)
 No Python server, Docker image, inference API or paid service is needed. Images and webcam frames are analysed
 on the user's device and are never uploaded.
 
-- **Pages:** `/` landing · `/login` `/signup` `/reset-password` · `/dashboard` `/detect` `/checkin` `/wellbeing`
-  `/history` `/model` `/about` (protected) — the same pages as the Streamlit app.
+- **Pages:** `/` landing · `/login` `/signup` `/reset-password` · `/dashboard` `/detect` `/checkin` `/tracker`
+  `/wellbeing` `/history` `/support` `/model` `/about` (protected). `/tracker` and `/support` are web-only.
 - **Detect:** upload a photo, or use the webcam (live predictions about 6–7 times a second, plus "Analyze this
-  frame" for a full result with Grad-CAM), with suggested next steps and an optional self-reported mood when saving.
-- **Reflect:** daily check-in (mood, factors, note), wellbeing toolkit (8 guided activities, journaling, gratitude),
-  and History & Insights (time range, rule-based insights, expression and mood charts, delete one or all entries).
+  frame" for a full result with Grad-CAM), with "What might help right now?" suggestions and an optional
+  self-reported mood when saving.
+- **Wellbeing:** daily check-in (mood, optional 1–5 energy / stress / sleep ratings, factors, note); wellbeing tracker
+  (7 days / 30 days / all: averages vs the previous period, daily trends, check-in frequency, mood by weekday,
+  plain-language insights); wellbeing toolkit ("ways to feel better" by situation, 8 guided activities, journaling,
+  gratitude); and History & Insights (time range or custom dates, type and expression filters, source column,
+  rule-based insights, charts, delete one or all entries).
+- **Find Professional Support:** "Need immediate help?" contacts (112, Tele-MANAS, Find A Helpline), who can help,
+  a filterable directory of verified providers, and official registers for checking a professional. See below.
 - **Model insights:** figures and numbers from `../results/`, copied by `node scripts/sync-model-results.mjs`
   (run it after re-training; its outputs are committed).
 - **History** is shared with the Streamlit app: `users/{uid}/checkins` (`kind`: detection, checkin, journal, reset),
   in the same format as `src/storage.py`. Images are never stored. If Firestore is unreachable, entries are kept in the browser.
+
+## Support contacts and the provider directory
+
+Nothing on `/support` is invented. Urgent contacts and registry links live in `src/lib/support.ts`, each with its
+official source and the date it was checked (`SUPPORT_CHECKED_ON`). Re-check them periodically.
+
+Providers live in `src/data/providers.json`. To add one, copy the details from an **official** source (the provider's
+own or a government website) and include:
+
+- `id`, `name`, `type` (one of `PROVIDER_TYPES`), `specialties`, `city`, `country`
+- `sourceUrl` (https, the page you verified against) and `verifiedOn` (YYYY-MM-DD)
+- optionally `qualification`, `organization`, `region`, `consultation`. Only add these if the source states them.
+
+Entries without a valid `sourceUrl` and `verifiedOn` are never shown, and `npm test` fails if any entry in the
+file is invalid. Never add reviews, ratings, availability or contact details that the source doesn't publish.
 
 ## How inference matches the Python app
 

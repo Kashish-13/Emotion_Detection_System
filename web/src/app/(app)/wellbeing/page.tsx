@@ -1,10 +1,12 @@
 "use client";
 
-// Wellbeing Toolkit: small resets and eight short activities (src/ui/views/toolkit.py). General wellbeing, not treatment.
+// Wellbeing Toolkit: ways to feel better by situation, small resets and eight short activities
+// (src/ui/views/toolkit.py). General wellbeing ideas, not treatment.
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { ActivityPanel, DistressNote } from "@/components/Wellbeing";
-import { ACTIVITIES, OVERWHELMED_RESETS, TOOLKIT_ORDER } from "@/lib/wellbeing";
+import Link from "next/link";
+import { ActivityPanel, DistressNote, SuggestionList } from "@/components/Wellbeing";
+import { ACTIVITIES, OVERWHELMED_RESETS, SITUATIONS, TOOLKIT_ORDER } from "@/lib/wellbeing";
 
 function Toolkit() {
   const params = useSearchParams();
@@ -13,6 +15,8 @@ function Toolkit() {
   const active = params.get("activity");
   const panel = useRef<HTMLDivElement>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [situation, setSituation] = useState("stressed");
+  const sit = SITUATIONS[situation];
 
   const open = (id: string | null) => router.replace(id ? `${pathname}?activity=${id}` : pathname, { scroll: false });
 
@@ -28,9 +32,9 @@ function Toolkit() {
   return (
     <>
       <div className="page-head">
-        <div className="eyebrow">Reflect · Wellbeing</div>
-        <h1 className="title">Reset your <span className="accent">mind.</span></h1>
-        <p className="subtitle">Small actions can help you pause, reset and refocus.</p>
+        <div className="eyebrow">Wellbeing · Toolkit</div>
+        <h1 className="title">Ways to <span className="accent">feel better</span></h1>
+        <p className="subtitle">Practical, everyday ideas to help you pause, reset and refocus. Pick what fits how you feel.</p>
       </div>
 
       <div ref={panel} style={{ scrollMarginTop: 80 }}>
@@ -52,6 +56,26 @@ function Toolkit() {
           ))}
         </div>
         {toast && <div className="alert alert-info" role="status" style={{ marginTop: 12 }}>💜 {toast}</div>}
+      </div>
+
+      <div className="section"><h2>What&apos;s going on?</h2><p>Choose a situation for a few general ideas that often help.</p></div>
+      <div className="card">
+        <div className="row" role="tablist" aria-label="Situation">
+          {Object.entries(SITUATIONS).map(([id, s]) => (
+            <button key={id} role="tab" aria-selected={situation === id} aria-controls="situation-panel"
+                    className={`chip${situation === id ? " active" : ""}`} onClick={() => setSituation(id)}>
+              <span aria-hidden="true">{s.emoji}</span> {s.title}
+            </button>
+          ))}
+        </div>
+        <div id="situation-panel" role="tabpanel" style={{ marginTop: 14 }}>
+          <div className="card-title">{sit.emoji} {sit.title}</div>
+          <p className="muted small" style={{ marginBottom: 4 }}>{sit.intro}</p>
+          <SuggestionList items={sit.items} />
+        </div>
+        <p className="muted small" style={{ marginTop: 10 }}>
+          If these feelings last for weeks or get in the way of daily life, <Link href="/support">talking to a professional</Link> can help.
+        </p>
       </div>
 
       <div className="section"><h2>Your toolkit</h2><p>Short guided activities. Each one ends with a quick “How do you feel after this?”.</p></div>

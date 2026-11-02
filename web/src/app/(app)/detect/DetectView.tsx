@@ -1,6 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- results are data: URLs generated in the browser */
+import Link from "next/link";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { EmotionBars, RankCards, ResultCard } from "@/components/Emotion";
 import WebcamPanel from "@/components/WebcamPanel";
@@ -293,10 +294,15 @@ export default function DetectView() {
               </div>
             </>
           )}
-          <div className="section"><h2>What you can do next</h2><p>{SELF_CHECK_PROMPT}</p></div>
+          <div className="section"><h2>What might help right now?</h2><p>{SELF_CHECK_PROMPT}</p></div>
           <div className="card" style={{ maxWidth: 760 }}>
             <div className="card-title" style={{ marginBottom: 6 }}>{suggestionsFor(face.emotion).headline}</div>
             <SuggestionList items={suggestionsFor(face.emotion).items} />
+            <div className="row" style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
+              <Link href="/wellbeing" className="btn btn-sm">Explore the wellbeing toolkit</Link>
+              <Link href="/checkin" className="btn btn-sm btn-ghost">Check in with your own words</Link>
+              <Link href="/support" className="btn btn-sm btn-ghost">Find support</Link>
+            </div>
           </div>
           <p className="muted small" style={{ marginTop: 8 }}>General wellbeing ideas, not medical advice. A detected expression
             doesn&apos;t tell us how you feel.</p>

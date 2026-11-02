@@ -18,6 +18,9 @@ export type HistoryEntry = {
   topPredictions?: { emotion: string; probability: number }[];
   selfReportedMood?: string;
   moodFactors?: string[];
+  energyLevel?: number; // 1–5, self-reported in a web check-in
+  stressLevel?: number;
+  sleepQuality?: number;
   journalText?: string;
   prompt?: string;
   activity?: string;
