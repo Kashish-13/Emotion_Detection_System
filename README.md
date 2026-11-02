@@ -47,7 +47,7 @@ All numbers in this README come from `results/metrics.json` and `results/trainin
 - **Ways to feel better**: a wellbeing toolkit with breathing, grounding, journaling and short resets
 - **Professional support**: verified helplines, a verified provider directory, public-listing search for psychiatrists, clinical psychologists and mental-health professionals, and official registers to check credentials
 - **Firebase Authentication** (email/password, password reset), with Firestore history scoped to each user
-- **Local fallback**: guest mode, and session storage when Firestore is unavailable
+
 
 ### Machine learning and computer vision
 
