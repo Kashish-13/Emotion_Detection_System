@@ -12,7 +12,7 @@ import streamlit as st
 
 from src import config
 from src.ui import state, theme
-from src.ui.views import about, checkin, dashboard, detect, history, landing, model_insights, toolkit
+from src.ui.views import about, checkin, dashboard, detect, history, landing, model_insights, support, toolkit
 
 st.set_page_config(page_title=config.APP_NAME, page_icon=str(config.ASSETS_DIR / "icon.svg"), layout="wide")
 
@@ -26,6 +26,8 @@ def build_pages() -> dict:
         "wellbeing": st.Page(toolkit.render, title="Wellbeing", icon=":material/spa:", url_path="wellbeing"),
         "history": st.Page(history.render, title="History & Insights", icon=":material/insights:",
                            url_path="history"),
+        "support": st.Page(support.render, title="Find Professional Support", icon=":material/support_agent:",
+                           url_path="support"),
         "insights": st.Page(model_insights.render, title="Model Insights", icon=":material/model_training:",
                             url_path="model"),
         "about": st.Page(about.render, title="About", icon=":material/info:", url_path="about"),
@@ -67,6 +69,7 @@ def main() -> None:
         "Home": [pages["dashboard"]],
         "Analyze": [pages["detect"]],
         "Reflect": [pages["checkin"], pages["wellbeing"], pages["history"]],
+        "Support": [pages["support"]],
         "Learn": [pages["insights"], pages["about"]],
     })
     sidebar()

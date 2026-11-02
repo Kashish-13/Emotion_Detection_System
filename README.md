@@ -11,10 +11,12 @@
 **EmotionSense** has two parts:
 
 1. A **deep-learning facial-expression recogniser**: a custom CNN trained on **FER-2013**, with OpenCV face detection, Grad-CAM explainability and camera-snapshot inference. It was trained and evaluated locally on a CPU-only Windows laptop.
-2. A **personal reflection and wellbeing dashboard** in Streamlit, with Firebase accounts, daily check-ins, a journal, a wellbeing toolkit and history insights.
+2. A **personal reflection and wellbeing dashboard** in Streamlit, with Firebase accounts, daily check-ins, a journal, a wellbeing toolkit, history insights and a **professional-support directory** with verified helplines.
 
 The second part turns a detected expression into an invitation to check in with yourself.
 
+> **Disclaimer:** EmotionSense provides AI-based emotion estimates for informational and self-awareness purposes only. It does not diagnose mental-health conditions or replace professional medical advice.
+>
 > **Responsible-use note:** EmotionSense classifies **facial expressions** in images. Facial expressions are not a reliable measure of what someone actually feels. It is **not** a medical, psychological, diagnostic or hiring tool, and its wellbeing suggestions are general ideas, not professional advice. See [Ethical considerations](#ethical-considerations).
 
 ---
@@ -32,6 +34,20 @@ The second part turns a detected expression into an invitation to check in with 
 All numbers in this README come from `results/metrics.json` and `results/training_summary.json`, written by the evaluation and training scripts.
 
 ## Features
+
+**At a glance**
+
+- **AI emotion detection** with a custom **CNN** trained on FER-2013, covering the **7 FER-2013 emotions**: Angry, Disgust, Fear, Happy, Sad, Surprise, Neutral
+- **Image upload** and **webcam (camera snapshot) detection**, with OpenCV face detection for one or many faces
+- **Confidence scores**, top-3 alternatives and the full probability distribution
+- **Grad-CAM explainability**: where the model looked for each face
+- **Dashboard & analytics**, and **emotion history** with filters and deletion
+- **Daily Check-In** (mood, factors, optional note)
+- **Wellbeing tracker**: self-reported mood trends over time, kept apart from the model's signal (in History & Insights)
+- **Ways to feel better**: a wellbeing toolkit with breathing, grounding, journaling and short resets
+- **Professional support**: verified helplines, a verified provider directory, public-listing search for psychiatrists, clinical psychologists and mental-health professionals, and official registers to check credentials
+- **Firebase Authentication** (email/password, password reset), with Firestore history scoped to each user
+- **Local fallback**: guest mode, and session storage when Firestore is unavailable
 
 ### Machine learning and computer vision
 
@@ -51,6 +67,7 @@ All numbers in this README come from `results/metrics.json` and `results/trainin
 - **Wellbeing toolkit:** *Feeling overwhelmed?* small resets and 8 activity cards, including journaling with prompts, a breathing guide (INHALE · HOLD · EXHALE with a countdown), step-by-step 5-4-3-2-1 grounding and timers. Each ends with a *How do you feel after this?* reflection.
 - **History & Insights:** charts and rule-based insights that keep the **model signal** (detected expressions) clearly apart from **self-reported mood**. You can delete one entry or all your data.
 - **Model Insights:** the full evaluation story, including why accuracy isn't enough and the leakage-aware results.
+- **Find Professional Support:** *Need immediate help?* with verified emergency and helpline numbers (India: 112, Tele-MANAS), a directory that shows only providers checked against an official source (with a **View Official Profile** link), city and professional-type filters, Google Maps searches of public listings, and links to the official registers for psychiatrists (NMC) and clinical psychologists (RCI). See [Professional support data](#professional-support-data).
 - **Clean, light design:** white cards, one indigo accent, subtle shadows and minimal motion (switched off for *reduce motion*), plus a per-emotion colour system. Fear, Surprise, Sad and Neutral are hard to tell apart with colour-vision deficiency, so every emotion is always shown with its **emoji and name** too.
 
 ## Screenshots
@@ -244,6 +261,7 @@ Grad-CAM weights the last convolutional feature map (`block4_2_relu`, 6×6) by t
 | Reflect | **Daily Check-In** | Mood (😄 Great to 😣 Difficult), factors and an optional written reflection |
 | Reflect | **Wellbeing** | *Feeling overwhelmed?* quick resets, 8 toolkit activities (including journaling with prompts), *How do you feel after this?* |
 | Reflect | **History & Insights** | Time-range filter; **model signal** and **self-reported mood** charts side by side; rule-based insights; activity table; delete data |
+| Support | **Find Professional Support** | *Need immediate help?* contacts, verified directory with city and type filters, public-listing search, registration checks, medical disclaimer |
 | Learn | **Model Insights** | Leakage-aware and official metrics, *why accuracy isn't enough*, architecture, curves, confusion matrices, per-class metrics, Grad-CAM |
 | Learn | **About** | How it works, technology, limitations, privacy |
 
@@ -256,6 +274,7 @@ Browser ── Streamlit (app.py) ── src/ui/views/*  (one module per page)
                 │                     │
                 │                     ├── src/predict.py ─ face_detector · preprocessing · CNN · gradcam
                 │                     ├── src/wellbeing.py  (suggestions, activities, prompts)
+                │                     ├── src/support.py    (verified helplines, provider directory, search links)
                 │                     └── src/analytics.py  (stats, streaks, rule-based insights)
                 │
                 └── src/ui/state.py ── src/storage.py ─┬─ SessionHistoryStore   (guest: in-memory only)
@@ -321,29 +340,41 @@ users/{uid}/checkins/{checkinId}
 - Suggestions are general wellbeing ideas, labelled as *not medical advice*.
 - The Wellbeing page always shows a note about reaching out to a qualified professional or someone you trust.
 
-## Web version (Next.js on Vercel)
+### Professional support data
 
-A second front end in [`web/`](web/README.md), separate from the Streamlit app (which is unchanged): Next.js +
-TypeScript with landing, login/sign-up, dashboard, detect (upload and webcam), history and about pages.
+The **Find Professional Support** page never invents doctors, clinics, phone numbers, qualifications, reviews, fees
+or availability. All of its data lives in [`src/support.py`](src/support.py):
 
-- **Inference runs in the browser.** The same trained weights, converted to TensorFlow.js without retraining, run with
-  OpenCV.js for face detection and preprocessing. No Python server, Docker image or paid service is needed, and images
-  never leave the user's device. The whole app deploys to Vercel as static pages.
-- **Same predictions as Python.** The browser pipeline reproduces `src/` step by step. On 44 real faces it gives
-  identical model inputs, probabilities within 3.3 × 10⁻⁷, the same predicted emotion every time, and Grad-CAM
-  heatmaps within 3 × 10⁻⁶.
-- **Shared history:** same Firebase project and `users/{uid}/checkins` format, so predictions saved in either app
-  appear in both. The existing `firestore.rules` apply unchanged.
-- [`inference_api/`](inference_api/README.md) is an optional FastAPI + Docker server version of the same pipeline.
-  The web app does not use it.
+- **Urgent contacts**, each linked to its official source: India's emergency number **112**
+  ([Ministry of Home Affairs](https://www.mha.gov.in/en/commoncontent/emergency-response-support-system-erss)), the
+  Government of India's **Tele-MANAS** helpline **14416 / 1-800-891-4416**
+  ([Press Information Bureau](https://www.pib.gov.in/PressReleasePage.aspx?PRID=1866498)), and
+  [Find A Helpline](https://findahelpline.com/) for other countries.
+- **Verified directory:** a provider is shown only if it has an official `https` source and the date it was checked.
+  It currently lists [NIMHANS](https://nimhans.ac.in/), Bengaluru. Individual practitioners are not listed, because
+  there is no free, official source of practitioner data to verify them against.
+- **Public-listing search:** buttons open a Google Maps search for psychiatrists, clinical psychologists or
+  mental-health professionals in the chosen city. Those results come from Google, not from EmotionSense, and the page
+  says so.
+- **Registration checks:** the National Medical Commission's
+  [Indian Medical Register](https://nmc.org.in/information-desk/indian-medical-register) (psychiatrists) and the
+  [Rehabilitation Council of India](https://rehabcouncil.nic.in/) (clinical psychologists).
+
+To add a provider, copy its details from an official source into `PROVIDERS` with `source_url` and `verified_on`;
+`tests/test_support.py` fails on any entry without them.
+
+## Other folders
+
+[`web/`](web/README.md) holds an earlier, experimental Next.js version and [`inference_api/`](inference_api/README.md)
+an optional FastAPI server. Neither is used by the Streamlit app, which is the main, deployed version of EmotionSense.
 
 ## Project structure
 
 ```
 Emotion_Detection_System/
 ├── app.py                      # Streamlit entry point: theme, sign-in gate, navigation
-├── web/                        # Next.js web app for Vercel (see web/README.md)
-├── inference_api/              # optional FastAPI + Docker server for the same pipeline (not used by web/)
+├── web/                        # earlier experimental Next.js version (not used by the Streamlit app)
+├── inference_api/              # optional FastAPI + Docker server (not used by the Streamlit app)
 ├── src/
 │   ├── config.py               # paths, labels, hyperparameters, thresholds, colours, Firebase settings
 │   ├── data_loader.py          # FER-2013 loading (+ --download), .npz cache
@@ -358,6 +389,7 @@ Emotion_Detection_System/
 │   ├── firebase_client.py      # Firebase Auth + Firestore over REST (user-scoped)
 │   ├── storage.py              # history entries; Firestore and guest-session stores
 │   ├── wellbeing.py            # suggestions, activities, check-in options, journal prompts
+│   ├── support.py              # verified helplines, provider directory, public-listing search links
 │   ├── analytics.py            # session summary, history stats, streaks, insights
 │   ├── utils.py                # plot style, figure saving
 │   └── ui/
@@ -365,7 +397,7 @@ Emotion_Detection_System/
 │       ├── components.py       # cards, result card, charts, activities
 │       ├── state.py            # sign-in state, token refresh, history store, routing
 │       ├── resources.py        # cached model + Grad-CAM
-│       └── views/              # landing, dashboard, detect, checkin, toolkit, history, model_insights, about
+│       └── views/              # landing, dashboard, detect, checkin, toolkit, history, support, model_insights, about
 ├── .streamlit/
 │   ├── config.toml             # light theme, font
 │   └── secrets.toml.example    # Firebase config template (real secrets.toml is git-ignored)
@@ -422,7 +454,7 @@ Open `notebooks/eda_and_model_analysis.ipynb` with the `.venv` interpreter selec
 pytest -q
 ```
 
-There are 98 tests, and none of them need a network connection or a real Firebase project.
+There are 106 tests, and none of them need a network connection or a real Firebase project.
 
 | File | Covers |
 |---|---|
@@ -431,7 +463,8 @@ There are 98 tests, and none of them need a network connection or a real Firebas
 | `test_firebase.py` | Auth request payloads, friendly errors, Firestore failures reported as `CloudStorageError`, malformed replies, token refresh, Firestore encoding, **every request scoped to `users/{own uid}`**, path-escape protection, per-user data isolation |
 | `test_wellbeing.py` | Suggestion and activity coverage, non-diagnostic wording scan, storage (no image data saved), streaks, stats, insights |
 | `test_persistence.py` | Firestore up and down: saves go to exactly one place (no duplicates), local fallback, loading, retry window, deletes, journal and check-in end to end, every page renders without Firestore |
-| `test_app.py` | Every page renders; navigation; guest flow; daily check-in submission; wellbeing activity and reflection; history deletion; **sign-up → logout → wrong password → login → password reset** against an in-memory fake Firebase |
+| `test_support.py` | Unverified providers are never shown, directory and filters, public-listing search URLs, official https sources for every contact, no diagnostic claims |
+| `test_app.py` | Every page renders; navigation; guest flow; professional-support page and filters; daily check-in submission; wellbeing activity and reflection; history deletion; **sign-up → logout → wrong password → login → password reset** against an in-memory fake Firebase |
 
 Tests that need the dataset or the model skip themselves if those files are absent.
 
@@ -460,6 +493,7 @@ Tests that need the dataset or the model skip themselves if those files are abse
 - FER-2013 labels are noisy (some duplicated images carry different labels), so the labels themselves are imperfect.
 - The app uses wording such as *"detected facial expression"*, never *"you are feeling…"*. It keeps model output separate from self-reported mood, and processes images and webcam frames in memory without storing them.
 - Wellbeing features are self-reflection tools. They are never triggered or scored by the model, and the app points to qualified professionals for persistent or severe distress.
+- The **Find Professional Support** page lists only information checked against official sources, labels external listings as such, and asks users to verify credentials, availability and consultation details before booking.
 
 ## Future improvements
 

@@ -80,15 +80,34 @@ def test_navigation_has_no_separate_webcam_page():
     at = AppTest.from_file(str(Path(__file__).resolve().parent.parent / "app.py"), default_timeout=180).run()
     at.button(key="guest").click().run()
     assert not at.exception
-    assert set(state.PAGES) == {"dashboard", "detect", "checkin", "wellbeing", "history", "insights", "about"}
+    assert set(state.PAGES) == {"dashboard", "detect", "checkin", "wellbeing", "history", "support", "insights",
+                                "about"}
 
 
 @pytest.mark.parametrize("view", ["dashboard", "detect", "webcam", "checkin", "toolkit", "history",
-                                  "model_insights", "about"])
+                                  "support", "model_insights", "about"])
 def test_every_page_renders_in_guest_mode(view):
     at = run_page(view)
     assert not at.exception, [e.value for e in at.exception]
     assert not at.error, [e.value for e in at.error]
+
+
+def test_professional_support_page():
+    from src import support
+
+    at = run_page("support", seed=False)
+    assert not at.exception
+    html = " ".join(h.proto.body for h in at.html)
+    assert "Need immediate help?" in html and support.EMERGENCY_TEXT in html and "14416" in html
+    assert any(support.MEDICAL_DISCLAIMER in i.value for i in at.info)
+    assert any(support.EXTERNAL_NOTE in w.value for w in at.warning)
+    assert at.selectbox(key="sp_type").options == ["All types", *support.PROFESSIONAL_TYPES]
+    assert any("NIMHANS" in m.value for m in at.markdown)  # the verified directory entry
+    at.text_input(key="sp_location").input("Mumbai").run()
+    assert any("No verified listings match yet" in h.proto.body for h in at.html)
+    at.text_input(key="sp_location").input("Bengaluru").run()
+    at.selectbox(key="sp_type").select("Psychiatrist").run()
+    assert not any("NIMHANS" in m.value for m in at.markdown)
 
 
 def test_empty_dashboard_shows_journey_message():
