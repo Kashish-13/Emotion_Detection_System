@@ -57,11 +57,24 @@ const FRIENDLY: Record<string, string> = {
   "auth/missing-password": "Please enter a password.",
   "auth/network-request-failed": "Could not reach Firebase. Check your internet connection.",
   "auth/operation-not-allowed": "Email/password sign-in is not enabled for this Firebase project.",
+  "auth/admin-restricted-operation": "New sign-ups are currently turned off for this app.",
+  "auth/missing-email": "Please enter a valid email address.",
 };
+
+// Problems with the app's own Firebase setup (wrong API key, Authentication not set up, blocked domain). Users
+// can't fix these, so they get one plain message; the code is logged for whoever deploys the app.
+const CONFIG_ERRORS = ["auth/api-key-not-valid", "auth/invalid-api-key", "auth/configuration-not-found",
+  "auth/unauthorized-domain", "auth/requests-from-referer", "auth/app-not-authorized", "auth/invalid-app-id",
+  "app/not-configured"];
+const CONFIG_MESSAGE = "Sign-in is temporarily unavailable because of a configuration problem on our side. "
+  + "Please try again later.";
 
 export function friendlyAuthError(err: unknown): string {
   const code = (err as { code?: string })?.code ?? "";
-  return FRIENDLY[code] ?? "Something went wrong. Please try again.";
+  if (FRIENDLY[code]) return FRIENDLY[code];
+  console.warn("Firebase Auth error:", code || err);
+  if (CONFIG_ERRORS.some((c) => code.startsWith(c))) return CONFIG_MESSAGE;
+  return "Something went wrong. Please try again.";
 }
 
 function requireAuth() {

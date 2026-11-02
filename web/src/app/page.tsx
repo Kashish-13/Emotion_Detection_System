@@ -8,6 +8,16 @@ const STEPS = [
   ["Understand the result", "Confidence, top-3 alternatives, all seven probabilities and Grad-CAM model attention."],
 ];
 
+// Everything available after signing in (each link goes through login when signed out).
+const FEATURES = [
+  ["📷", "Emotion detection", "Photo or webcam, with confidence, all seven probabilities and Grad-CAM.", "/detect"],
+  ["📝", "Daily check-in", "Note your mood, energy, stress and sleep in about a minute.", "/checkin"],
+  ["📈", "Wellbeing tracker", "See your mood, stress, energy and sleep trends over 7 or 30 days.", "/tracker"],
+  ["🌿", "Ways to feel better", "Breathing, grounding and practical ideas for stress, worry, low mood, anger and sleep.", "/wellbeing"],
+  ["🗂️", "History & insights", "Your saved results and check-ins, with filters and simple patterns.", "/history"],
+  ["🤝", "Professional support", "Verified helplines and how to find and check a mental-health professional.", "/support"],
+];
+
 const pct1 = (x: number) => `${(x * 100).toFixed(1)}%`;
 
 export default function Landing() {
@@ -33,12 +43,8 @@ export default function Landing() {
             </p>
             <div className="row" style={{ marginTop: 22 }}>
               <Link href="/detect" className="btn btn-primary">Try Emotion Detection</Link>
-              <a href="https://emotiondetectionsystem-13.streamlit.app/" className="btn" target="_blank" rel="noopener noreferrer">
-                Streamlit version ↗
-              </a>
             </div>
             <div className="row" style={{ marginTop: 16 }}>
-              <span className="chip">🔒 Runs in your browser</span>
               <span className="chip">🧠 7 expressions</span>
               <span className="chip">🌿 Not a diagnostic tool</span>
             </div>
@@ -70,6 +76,17 @@ export default function Landing() {
               <div className="step-n">{i + 1}</div>
               <div><div className="card-title">{title}</div><p className="muted small" style={{ marginTop: 4 }}>{text}</p></div>
             </div>
+          ))}
+        </div>
+
+        <section className="section"><h2>What&apos;s inside</h2><p>A free account gives you the full EmotionSense toolkit.</p></section>
+        <div className="grid grid-3">
+          {FEATURES.map(([icon, title, text, href]) => (
+            <Link key={href} href={href} className="card hover feature-card">
+              <div style={{ fontSize: "1.4rem" }} aria-hidden="true">{icon}</div>
+              <div className="card-title" style={{ marginTop: 4 }}>{title}</div>
+              <p className="muted small" style={{ marginTop: 2 }}>{text}</p>
+            </Link>
           ))}
         </div>
 

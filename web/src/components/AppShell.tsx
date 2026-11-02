@@ -12,7 +12,7 @@ const NAV = [
   { section: "Wellbeing", items: [
     { href: "/checkin", label: "Daily Check-In", icon: "✎" },
     { href: "/tracker", label: "Wellbeing Tracker", icon: "∿" },
-    { href: "/wellbeing", label: "Wellbeing Toolkit", icon: "❀" },
+    { href: "/wellbeing", label: "Ways to Feel Better", icon: "❀" },
     { href: "/history", label: "History & Insights", icon: "↺" },
   ] },
   { section: "Support", items: [{ href: "/support", label: "Find Professional Support", icon: "✚" }] },
