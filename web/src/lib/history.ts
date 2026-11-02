@@ -18,6 +18,9 @@ export type HistoryEntry = {
   topPredictions?: { emotion: string; probability: number }[];
   selfReportedMood?: string;
   moodFactors?: string[];
+  energyLevel?: number; // 1–5, self-reported in a web check-in
+  stressLevel?: number;
+  sleepQuality?: number;
   journalText?: string;
   prompt?: string;
   activity?: string;
@@ -35,6 +38,13 @@ function cloudAvailable(): boolean {
   } catch {
     return true;
   }
+}
+
+/** Forget the Firestore back-off, so the next account starts with a fresh cloud attempt. */
+export function clearCloudRetry() {
+  try {
+    sessionStorage.removeItem(RETRY_KEY);
+  } catch { /* nothing to clear */ }
 }
 
 const localKey = (uid: string) => `emotionsense:history:${uid}`;
@@ -70,29 +80,38 @@ function writeLocal(uid: string, entries: HistoryEntry[]) {
 
 const newestFirst = (a: HistoryEntry, b: HistoryEntry) => (b.timestamp || "").localeCompare(a.timestamp || "");
 
+type EntryFields = Omit<HistoryEntry, "id" | "kind" | "timestamp">;
+
+/** An entry with a UTC timestamp, dropping empty optional fields (src/storage.py new_entry). */
+export function newEntry(kind: HistoryEntry["kind"], fields: EntryFields = {}): Omit<HistoryEntry, "id"> {
+  const kept = Object.entries(fields).filter(([, v]) => v != null && v !== "" && !(Array.isArray(v) && v.length === 0));
+  return { kind, timestamp: new Date().toISOString(), ...Object.fromEntries(kept) };
+}
+
 /** A detection entry in the Streamlit format (src/storage.py detection_entry). Never contains image data. */
-export function detectionEntry(face: FaceResult, source = "web") {
-  return {
-    kind: "detection" as const,
-    timestamp: new Date().toISOString(),
+export function detectionEntry(face: FaceResult, source = "web", mood?: string | null) {
+  return newEntry("detection", {
     source,
     detectedEmotion: face.emotion,
     confidence: round4(face.confidence),
     topPredictions: face.top3.map((p) => ({ emotion: p.emotion, probability: round4(p.probability) })),
-  };
+    selfReportedMood: mood ?? undefined,
+  });
 }
 
-export async function saveEntry(uid: string, entry: Omit<HistoryEntry, "id">): Promise<void> {
+/** Save an entry exactly once. True: saved to Firestore; false: kept in this browser instead. */
+export async function saveEntry(uid: string, entry: Omit<HistoryEntry, "id">): Promise<boolean> {
   const db = firestore();
   if (db && cloudAvailable()) {
     try {
       await withTimeout(addDoc(collection(db, "users", uid, "checkins"), { ...entry, userId: uid }));
-      return;
+      return true;
     } catch (err) {
       cloudFailed(err);
     }
   }
   writeLocal(uid, [...readLocal(uid), { ...entry, id: `local-${crypto.randomUUID()}` }]);
+  return false;
 }
 
 export async function listHistory(uid: string): Promise<HistoryEntry[]> {
@@ -120,6 +139,23 @@ export async function deleteEntry(uid: string, id: string): Promise<boolean> {
   try {
     await withTimeout(deleteDoc(doc(db, "users", uid, "checkins", id)));
     return true;
+  } catch (err) {
+    cloudFailed(err);
+    return false;
+  }
+}
+
+/** Delete everything. False if the browser copy was cleared but some cloud entries couldn't be deleted. */
+export async function clearHistory(uid: string): Promise<boolean> {
+  writeLocal(uid, []);
+  const db = firestore();
+  if (!db) return true;
+  try {
+    for (;;) { // in pages, so histories longer than FETCH_LIMIT are cleared too
+      const snap = await withTimeout(getDocs(query(collection(db, "users", uid, "checkins"), qLimit(FETCH_LIMIT))));
+      if (snap.empty) return true;
+      await withTimeout(Promise.all(snap.docs.map((d) => deleteDoc(d.ref))));
+    }
   } catch (err) {
     cloudFailed(err);
     return false;

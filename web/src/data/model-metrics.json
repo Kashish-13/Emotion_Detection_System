@@ -1,22 +1,47 @@
 {
-  "_source": "Generated from results/metrics.json and results/training_summary.json. Do not edit by hand.",
+  "_source": "Generated from results/metrics.json and results/training_summary.json by scripts/sync-model-results.mjs. Do not edit by hand.",
   "leakageAware": {
     "n": 3275,
     "accuracy": 0.5957,
+    "macroPrecision": 0.5357,
+    "macroRecall": 0.5956,
     "macroF1": 0.5448,
     "weightedF1": 0.5953
   },
   "official": {
     "n": 3589,
     "accuracy": 0.6094,
+    "macroPrecision": 0.5605,
+    "macroRecall": 0.6142,
     "macroF1": 0.5702,
     "weightedF1": 0.6076
+  },
+  "seenInTrainOrVal": {
+    "n": 314,
+    "accuracy": 0.7516,
+    "macroPrecision": 0.71,
+    "macroRecall": 0.7344,
+    "macroF1": 0.7179,
+    "weightedF1": 0.7489
+  },
+  "baselineAlwaysHappy": {
+    "n": 3589,
+    "accuracy": 0.2449,
+    "macroPrecision": 0.035,
+    "macroRecall": 0.1429,
+    "macroF1": 0.0562,
+    "weightedF1": 0.0964
   },
   "top3AccuracyOfficial": 0.8955,
   "baselineAlwaysHappyAccuracy": 0.2449,
   "parameters": 713439,
   "modelSizeMb": 8.7,
   "trainImages": 28697,
+  "valImages": 3588,
+  "trainingMinutes": 67.8,
+  "bestEpoch": 27,
+  "epochsRun": 35,
+  "inferenceMsPerFaceCpu": 60.65,
   "perClassF1LeakageAware": {
     "Angry": 0.4825,
     "Disgust": 0.3537,
@@ -25,5 +50,150 @@
     "Sad": 0.4876,
     "Surprise": 0.6915,
     "Neutral": 0.6072
-  }
+  },
+  "perClassLeakageAware": {
+    "Angry": {
+      "precision": 0.5546,
+      "recall": 0.427,
+      "f1": 0.4825,
+      "support": 452
+    },
+    "Disgust": {
+      "precision": 0.2385,
+      "recall": 0.6842,
+      "f1": 0.3537,
+      "support": 38
+    },
+    "Fear": {
+      "precision": 0.4178,
+      "recall": 0.3125,
+      "f1": 0.3576,
+      "support": 480
+    },
+    "Happy": {
+      "precision": 0.8977,
+      "recall": 0.7778,
+      "f1": 0.8334,
+      "support": 846
+    },
+    "Sad": {
+      "precision": 0.4783,
+      "recall": 0.4974,
+      "f1": 0.4876,
+      "support": 575
+    },
+    "Surprise": {
+      "precision": 0.6246,
+      "recall": 0.7743,
+      "f1": 0.6915,
+      "support": 288
+    },
+    "Neutral": {
+      "precision": 0.5383,
+      "recall": 0.6963,
+      "f1": 0.6072,
+      "support": 596
+    }
+  },
+  "perClassOfficial": {
+    "Angry": {
+      "precision": 0.5688,
+      "recall": 0.4379,
+      "f1": 0.4948,
+      "support": 491
+    },
+    "Disgust": {
+      "precision": 0.3178,
+      "recall": 0.7455,
+      "f1": 0.4457,
+      "support": 55
+    },
+    "Fear": {
+      "precision": 0.4268,
+      "recall": 0.3258,
+      "f1": 0.3695,
+      "support": 528
+    },
+    "Happy": {
+      "precision": 0.8943,
+      "recall": 0.7793,
+      "f1": 0.8328,
+      "support": 879
+    },
+    "Sad": {
+      "precision": 0.4799,
+      "recall": 0.5034,
+      "f1": 0.4914,
+      "support": 594
+    },
+    "Surprise": {
+      "precision": 0.6872,
+      "recall": 0.8029,
+      "f1": 0.7406,
+      "support": 416
+    },
+    "Neutral": {
+      "precision": 0.5485,
+      "recall": 0.7045,
+      "f1": 0.6168,
+      "support": 626
+    }
+  },
+  "confidenceReliability": [
+    {
+      "bin": "0.0-0.3",
+      "share_of_predictions": 0.0435,
+      "accuracy": 0.2949
+    },
+    {
+      "bin": "0.3-0.4",
+      "share_of_predictions": 0.1566,
+      "accuracy": 0.3737
+    },
+    {
+      "bin": "0.4-0.5",
+      "share_of_predictions": 0.1825,
+      "accuracy": 0.4321
+    },
+    {
+      "bin": "0.5-0.6",
+      "share_of_predictions": 0.1474,
+      "accuracy": 0.4934
+    },
+    {
+      "bin": "0.6-0.7",
+      "share_of_predictions": 0.1145,
+      "accuracy": 0.618
+    },
+    {
+      "bin": "0.7-0.8",
+      "share_of_predictions": 0.1034,
+      "accuracy": 0.7143
+    },
+    {
+      "bin": "0.8-0.9",
+      "share_of_predictions": 0.0978,
+      "accuracy": 0.8462
+    },
+    {
+      "bin": "0.9-1.0",
+      "share_of_predictions": 0.1544,
+      "accuracy": 0.9386
+    },
+    {
+      "bin": "app band: High",
+      "share_of_predictions": 0.3555,
+      "accuracy": 0.848
+    },
+    {
+      "bin": "app band: Moderate",
+      "share_of_predictions": 0.4444,
+      "accuracy": 0.5003
+    },
+    {
+      "bin": "app band: Low",
+      "share_of_predictions": 0.2001,
+      "accuracy": 0.3565
+    }
+  ]
 }

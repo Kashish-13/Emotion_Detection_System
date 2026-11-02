@@ -1,0 +1,17 @@
+{
+  "_readme": "Only add entries checked against an official public source (the provider's own or a government website). Every entry needs sourceUrl and verifiedOn (YYYY-MM-DD); entries without them are not shown. Never add invented or unverified names, numbers, qualifications, reviews or availability. See web/README.md.",
+  "providers": [
+    {
+      "id": "nimhans-bengaluru",
+      "name": "National Institute of Mental Health and Neurosciences (NIMHANS)",
+      "type": "Hospital / institute",
+      "specialties": ["Psychiatry", "Clinical psychology"],
+      "city": "Bengaluru",
+      "region": "Karnataka",
+      "country": "India",
+      "consultation": "Outpatient and specialty clinics. Check the official website for current registration and timings.",
+      "sourceUrl": "https://nimhans.ac.in/",
+      "verifiedOn": "2026-11-02"
+    }
+  ]
+}

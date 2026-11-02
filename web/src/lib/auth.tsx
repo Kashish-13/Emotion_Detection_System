@@ -6,16 +6,32 @@ import {
 } from "firebase/auth";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { firebaseAuth, firebaseConfigured } from "./firebase";
+import { clearCloudRetry } from "./history";
+import { clearSession } from "./session";
 
 type AuthState = { user: User | null; loading: boolean };
 const AuthContext = createContext<AuthState>({ user: null, loading: true });
+
+/** Drop everything this tab kept for the previous account (session data, cloud back-off). */
+function clearAccountState() {
+  clearSession();
+  clearCloudRetry();
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, loading: firebaseConfigured });
   useEffect(() => {
     const auth = firebaseAuth();
     if (!auth) return;
-    return onAuthStateChanged(auth, (user) => setState({ user, loading: false }));
+    let uid: string | null | undefined; // undefined until Firebase reports the first state
+    return onAuthStateChanged(auth, (user) => {
+      const next = user?.uid ?? null;
+      // Signed out, or a different account (including sign-outs from another tab or an expired session):
+      // reset before any page renders with the new user.
+      if (next === null || (uid !== undefined && next !== uid)) clearAccountState();
+      uid = next;
+      setState({ user, loading: false });
+    });
   }, []);
   return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>;
 }
@@ -64,6 +80,7 @@ export async function signUp(name: string, email: string, password: string) {
 }
 
 export async function logOut() {
+  clearAccountState();
   await signOut(requireAuth());
 }
 
